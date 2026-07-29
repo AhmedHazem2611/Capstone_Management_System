@@ -35,7 +35,7 @@ public class ProjectService : IProjectService
 
     public async Task<(Project? project, string? error)> UpsertMyTeamProjectAsync(long userId, string role, string? nameEn, string? nameAr, string? companyName, string? additionalInfo, string? projectDescription, int statusId)
     {
-        var isPrivileged = role.Replace(" ", string.Empty, StringComparison.OrdinalIgnoreCase).Equals("SuperAdmin", StringComparison.OrdinalIgnoreCase)
+        var isPrivileged = (role.Replace(" ", string.Empty, StringComparison.OrdinalIgnoreCase).Equals("SuperAdmin", StringComparison.OrdinalIgnoreCase) || role.Equals("Admin", StringComparison.OrdinalIgnoreCase))
             || role.Replace(" ", string.Empty, StringComparison.OrdinalIgnoreCase).Equals("Board", StringComparison.OrdinalIgnoreCase)
             || role.Replace(" ", string.Empty, StringComparison.OrdinalIgnoreCase).Equals("StaffAdmin", StringComparison.OrdinalIgnoreCase)
             || role.Replace(" ", string.Empty, StringComparison.OrdinalIgnoreCase).Equals("Engineer", StringComparison.OrdinalIgnoreCase)
@@ -49,8 +49,8 @@ public class ProjectService : IProjectService
         if (myTeam == null)
             return (null, "No team found");
 
-        var isLeader = myTeam.TeamLeaderAccountId == userId;
-        if (!isLeader && !isPrivileged)
+        var isMember = myTeam.TeamMembers.Any(m => m.TeamMemberAccountId == userId);
+        if (!isMember && !isPrivileged)
             return (null, "Not authorized");
 
         if (myTeam.Project == null)
@@ -88,6 +88,10 @@ public class ProjectService : IProjectService
             await _context.SaveChangesAsync();
 
             myTeam.ProjectId = newProject.Id;
+            if (!string.IsNullOrWhiteSpace(nameEn))
+            {
+                myTeam.TeamName = nameEn;
+            }
             await _context.SaveChangesAsync();
 
             return (newProject, null);
@@ -99,9 +103,86 @@ public class ProjectService : IProjectService
             myTeam.Project.CompanyName = companyName ?? myTeam.Project.CompanyName;
             myTeam.Project.ProjectDescription = projectDescription ?? myTeam.Project.ProjectDescription;
             myTeam.Project.AdditionalInformation = additionalInfo ?? myTeam.Project.AdditionalInformation;
+            
+            if (!string.IsNullOrWhiteSpace(nameEn))
+            {
+                myTeam.TeamName = nameEn;
+            }
+
             await _context.SaveChangesAsync();
 
             return (myTeam.Project, null);
+        }
+    }
+
+    public async Task<(Project? project, string? error)> UpsertProjectByTeamAsync(long teamId, string? nameEn, string? nameAr, string? companyName, string? additionalInfo, string? projectDescription, int statusId)
+    {
+        var targetTeam = await _context.Teams
+            .Include(t => t.Project)
+            .FirstOrDefaultAsync(t => t.Id == teamId);
+
+        if (targetTeam == null)
+            return (null, "Team not found");
+
+        if (targetTeam.Project == null)
+        {
+            long supervisorId;
+            if (targetTeam.SupervisorAccountId != null && targetTeam.SupervisorAccountId > 0)
+            {
+                supervisorId = targetTeam.SupervisorAccountId.Value;
+            }
+            else
+            {
+                var defaultSupervisor = await _context.Accounts
+                    .Where(a => a.IsActive && a.StatusId == 1)
+                    .FirstOrDefaultAsync();
+
+                if (defaultSupervisor == null)
+                    return (null, "No supervisor available");
+
+                supervisorId = defaultSupervisor.Id;
+            }
+
+            var newProject = new Project
+            {
+                NameEn = nameEn ?? string.Empty,
+                NameAr = nameAr,
+                CompanyName = companyName ?? string.Empty,
+                AdditionalInformation = additionalInfo,
+                DateOfCreation = DateTime.UtcNow,
+                ProjectDescription = projectDescription ?? string.Empty,
+                SupervisorAccountId = supervisorId,
+                StatusId = statusId == 0 ? 1 : statusId
+            };
+
+            _context.Projects.Add(newProject);
+            await _context.SaveChangesAsync();
+
+            targetTeam.ProjectId = newProject.Id;
+            if (!string.IsNullOrWhiteSpace(nameEn))
+            {
+                targetTeam.TeamName = nameEn;
+            }
+            await _context.SaveChangesAsync();
+
+            return (newProject, null);
+        }
+        else
+        {
+            targetTeam.Project.NameEn = nameEn ?? targetTeam.Project.NameEn;
+            targetTeam.Project.NameAr = nameAr ?? targetTeam.Project.NameAr;
+            targetTeam.Project.CompanyName = companyName ?? targetTeam.Project.CompanyName;
+            targetTeam.Project.ProjectDescription = projectDescription ?? targetTeam.Project.ProjectDescription;
+            targetTeam.Project.AdditionalInformation = additionalInfo ?? targetTeam.Project.AdditionalInformation;
+            
+            if (!string.IsNullOrWhiteSpace(nameEn))
+            {
+                targetTeam.TeamName = nameEn;
+            }
+
+            await _context.SaveChangesAsync();
+
+            return (targetTeam.Project, null);
         }
     }
 }

@@ -21,6 +21,9 @@ public class TeamService : ITeamService
             .Include(t => t.TeamLeaderAccount)
             .Include(t => t.Class)
             .ThenInclude(c => c.Grade)
+            .Include(t => t.Class)
+            .ThenInclude(c => c.ReviewerSupervisorExtensions)
+            .ThenInclude(rse => rse.Account)
             .AsQueryable();
 
         if (!IsPrivileged(role))
@@ -43,13 +46,19 @@ public class TeamService : ITeamService
         return await teamsQuery.Select(t => new
         {
             id = t.Id,
-            teamName = t.TeamName,
+            teamName = (t.Project != null && !string.IsNullOrWhiteSpace(t.Project.NameEn)) ? t.Project.NameEn : t.TeamName,
+            projectNameEn = t.Project != null ? t.Project.NameEn : null,
+            projectNameAr = t.Project != null ? t.Project.NameAr : null,
+            projectDescription = t.Project != null ? t.Project.ProjectDescription : null,
             classId = t.ClassId,
             className = t.Class != null ? t.Class.ClassName : null,
             gradeId = t.Class != null && t.Class.Grade != null ? (long?)t.Class.Grade.Id : null,
             gradeName = t.Class != null && t.Class.Grade != null ? t.Class.Grade.GradeName : null,
             supervisorAccountId = t.SupervisorAccountId,
             supervisorName = t.SupervisorAccount != null ? t.SupervisorAccount.FullNameEn : null,
+            engineers = t.Class != null && t.Class.ReviewerSupervisorExtensions != null
+                ? t.Class.ReviewerSupervisorExtensions.Where(rse => rse.Account != null && rse.Account.RoleId == 23).Select(rse => rse.Account.FullNameEn).ToList()
+                : new List<string>(),
             teamLeaderAccountId = t.TeamLeaderAccountId,
             teamLeaderName = t.TeamLeaderAccount != null ? t.TeamLeaderAccount.FullNameEn : null
         }).ToListAsync();
@@ -63,6 +72,9 @@ public class TeamService : ITeamService
             .Include(t => t.TeamLeaderAccount)
             .Include(t => t.Class)
             .ThenInclude(c => c.Grade)
+            .Include(t => t.Class)
+            .ThenInclude(c => c.ReviewerSupervisorExtensions)
+            .ThenInclude(rse => rse.Account)
             .Where(t => t.Id == id)
             .AsQueryable();
 
@@ -95,6 +107,9 @@ public class TeamService : ITeamService
                 GradeName = t.Class != null && t.Class.Grade != null ? t.Class.Grade.GradeName : null,
                 SupervisorAccountId = t.SupervisorAccountId,
                 SupervisorName = t.SupervisorAccount != null ? t.SupervisorAccount.FullNameEn : null,
+                Engineers = t.Class != null && t.Class.ReviewerSupervisorExtensions != null
+                    ? t.Class.ReviewerSupervisorExtensions.Where(rse => rse.Account != null && rse.Account.RoleId == 23).Select(rse => rse.Account.FullNameEn).ToList()
+                    : new List<string>(),
                 TeamLeaderAccountId = t.TeamLeaderAccountId,
                 TeamLeaderName = t.TeamLeaderAccount != null ? t.TeamLeaderAccount.FullNameEn : null,
                 TeamMembers = t.TeamMembers.Select(tm => new
@@ -166,9 +181,16 @@ public class TeamService : ITeamService
         var account = await _context.Accounts.FindAsync(accountId);
         if (account == null) return (null, "Account not found");
 
-        var existingMember = await _context.TeamMembers
-            .FirstOrDefaultAsync(tm => tm.TeamId == teamId && tm.TeamMemberAccountId == accountId);
-        if (existingMember != null) return (null, "Already a member");
+        // 1. Role Validation Check
+        var role = await _context.Roles.FindAsync(account.RoleId);
+        if (role == null || role.RoleName != "Student")
+            return (null, "Only students can be added to a team.");
+
+        // 2. Multiple Teams Check
+        var isAlreadyInAnyTeam = await _context.TeamMembers
+            .AnyAsync(tm => tm.TeamMemberAccountId == accountId);
+        if (isAlreadyInAnyTeam) 
+            return (null, "Student is already assigned to a team in the system.");
 
         var teamMember = new TeamMember
         {
@@ -401,7 +423,7 @@ public class TeamService : ITeamService
     {
         if (string.IsNullOrWhiteSpace(role)) return false;
         role = role.Replace(" ", string.Empty, StringComparison.OrdinalIgnoreCase);
-        return role.Equals("SuperAdmin", StringComparison.OrdinalIgnoreCase)
+        return (role.Equals("SuperAdmin", StringComparison.OrdinalIgnoreCase) || role.Equals("Admin", StringComparison.OrdinalIgnoreCase))
             || role.Equals("Board", StringComparison.OrdinalIgnoreCase)
             || role.Equals("StaffAdmin", StringComparison.OrdinalIgnoreCase)
             || role.Equals("Engineer", StringComparison.OrdinalIgnoreCase)

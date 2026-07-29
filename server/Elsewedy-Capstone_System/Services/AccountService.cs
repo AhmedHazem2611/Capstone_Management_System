@@ -24,7 +24,7 @@ public class AccountService : IAccountService
 
     public async Task<object> GetCapstoneRolesAsync()
     {
-        var allowedNames = new[] { "Student", "Engineer", "Super Admin" };
+        var allowedNames = new[] { "Student", "Engineer", "SuperAdmin", "Super Admin", "StaffAdmin", "Staff Admin", "Board", "CapstoneLead" };
         return await _context.Roles
             .AsNoTracking()
             .Where(r => r.BusinessEntity == "CapstoneProject" && allowedNames.Contains(r.RoleName))
@@ -336,9 +336,11 @@ public class AccountService : IAccountService
     public async Task<object> GetAccountsByRoleNameAsync(string roleName)
     {
         var allRoles = await _context.Roles.AsNoTracking().Select(r => new { r.Id, r.RoleName, r.BusinessEntity }).ToListAsync();
+        
+        // Find role matching name and CapstoneProject entity
         var role = allRoles.FirstOrDefault(r => r.RoleName == roleName && r.BusinessEntity == "CapstoneProject");
         if (role == null) role = allRoles.FirstOrDefault(r => string.Equals(r.RoleName, roleName, StringComparison.OrdinalIgnoreCase) && r.BusinessEntity == "CapstoneProject");
-        if (role == null) role = allRoles.FirstOrDefault(r => r.RoleName.Contains(roleName, StringComparison.OrdinalIgnoreCase) && r.BusinessEntity == "CapstoneProject");
+        if (role == null) role = allRoles.FirstOrDefault(r => r.RoleName.Replace(" ", "").Contains(roleName.Replace(" ", ""), StringComparison.OrdinalIgnoreCase) && r.BusinessEntity == "CapstoneProject");
         if (role == null) return new List<object>();
 
         return await _context.AccountRoles

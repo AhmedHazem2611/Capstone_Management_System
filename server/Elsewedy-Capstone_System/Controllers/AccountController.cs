@@ -19,7 +19,7 @@ namespace Elsewedy_Capstone_System.Controllers
         }
 
         [HttpGet("Roles/Capstone")]
-        [Authorize(Roles = "StaffAdmin,SuperAdmin,Board,Engineer,CapstoneLead")]
+        [Authorize(Roles = "StaffAdmin,SuperAdmin,Admin,Board,Engineer,CapstoneLead")]
         public async Task<IActionResult> GetCapstoneRoles()
         {
             try
@@ -34,7 +34,7 @@ namespace Elsewedy_Capstone_System.Controllers
         }
 
         [HttpPost("CreateStaffAdmin")]
-        [Authorize(Roles = "StaffAdmin,SuperAdmin,Board,CapstoneLead")]
+        [Authorize(Roles = "StaffAdmin,SuperAdmin,Admin,Board,CapstoneLead")]
         public async Task<IActionResult> CreateStaffAdminAccount([FromBody] CreateStaffAdminRequest request)
         {
             try
@@ -51,7 +51,7 @@ namespace Elsewedy_Capstone_System.Controllers
         }
 
         [HttpPost("CreateSimple")]
-        [Authorize(Roles = "StaffAdmin,SuperAdmin,Board,Engineer,CapstoneLead")]
+        [Authorize(Roles = "StaffAdmin,SuperAdmin,Admin,Board,Engineer,CapstoneLead")]
         public async Task<IActionResult> CreateSimpleAccount([FromBody] CreateSimpleAccountRequest request)
         {
             try
@@ -74,7 +74,7 @@ namespace Elsewedy_Capstone_System.Controllers
         }
 
         [HttpGet("LoginStatus")]
-        [Authorize(Roles = "StaffAdmin,SuperAdmin,Board,CapstoneLead")]
+        [Authorize(Roles = "StaffAdmin,SuperAdmin,Admin,Board,CapstoneLead")]
         public async Task<IActionResult> GetLoginStatus()
         {
             try
@@ -146,7 +146,7 @@ namespace Elsewedy_Capstone_System.Controllers
         }
 
         [HttpGet("StaffAdmin/All")]
-        [Authorize(Roles = "StaffAdmin,SuperAdmin,Board,CapstoneLead")]
+        [Authorize(Roles = "StaffAdmin,SuperAdmin,Admin,Board,CapstoneLead")]
         public async Task<IActionResult> GetAllAccountsForStaffAdmin()
         {
             try
@@ -185,7 +185,7 @@ namespace Elsewedy_Capstone_System.Controllers
                 var normalizedRole = role.Replace(" ", string.Empty, StringComparison.OrdinalIgnoreCase);
                 long.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId);
 
-                if (!normalizedRole.Equals("SuperAdmin") && !normalizedRole.Equals("Board") &&
+                if (!normalizedRole.Equals("SuperAdmin,Admin") && !normalizedRole.Equals("Board") &&
                     !normalizedRole.Equals("StaffAdmin") && !normalizedRole.Equals("CapstoneLead") && userId != id)
                     return Forbid();
 
@@ -200,7 +200,7 @@ namespace Elsewedy_Capstone_System.Controllers
         }
 
         [HttpGet("ByRoleName/{roleName}")]
-        [Authorize(Roles = "StaffAdmin,SuperAdmin,Board,CapstoneLead,Engineer")]
+        [Authorize(Roles = "StaffAdmin,SuperAdmin,Admin,Board,CapstoneLead,Engineer")]
         public async Task<IActionResult> GetAccountsByRoleName(string roleName)
         {
             try
@@ -243,7 +243,7 @@ namespace Elsewedy_Capstone_System.Controllers
         }
 
         [HttpPost("AssignEngineerToClass")]
-        [Authorize(Roles = "StaffAdmin,SuperAdmin,Board,CapstoneLead")]
+        [Authorize(Roles = "StaffAdmin,SuperAdmin,Admin,Board,CapstoneLead")]
         public async Task<IActionResult> AssignEngineerToClass([FromBody] AssignEngineerRequest request)
         {
             try
@@ -259,7 +259,7 @@ namespace Elsewedy_Capstone_System.Controllers
         }
 
         [HttpPost("AssignReviewerToClass")]
-        [Authorize(Roles = "StaffAdmin,SuperAdmin,Board,CapstoneLead")]
+        [Authorize(Roles = "StaffAdmin,SuperAdmin,Admin,Board,CapstoneLead")]
         public async Task<IActionResult> AssignReviewerToClass([FromBody] AssignReviewerRequest request)
         {
             try
@@ -275,7 +275,7 @@ namespace Elsewedy_Capstone_System.Controllers
         }
 
         [HttpDelete("RemoveAssignment/{accountId}")]
-        [Authorize(Roles = "StaffAdmin,SuperAdmin,Board,CapstoneLead")]
+        [Authorize(Roles = "StaffAdmin,SuperAdmin,Admin,Board,CapstoneLead")]
         public async Task<IActionResult> RemoveAssignment(long accountId)
         {
             try
@@ -291,7 +291,7 @@ namespace Elsewedy_Capstone_System.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize(Roles = "StaffAdmin,SuperAdmin,Board,CapstoneLead")]
+        [Authorize(Roles = "StaffAdmin,SuperAdmin,Admin,Board,CapstoneLead")]
         public async Task<IActionResult> UpdateAccount(long id, [FromBody] UpdateAccountRequest request)
         {
             try
@@ -307,7 +307,7 @@ namespace Elsewedy_Capstone_System.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = "StaffAdmin,SuperAdmin,Board,CapstoneLead")]
+        [Authorize(Roles = "StaffAdmin,SuperAdmin,Admin,Board,CapstoneLead")]
         public async Task<IActionResult> DeleteAccount(long id)
         {
             try
@@ -323,7 +323,7 @@ namespace Elsewedy_Capstone_System.Controllers
         }
 
         [HttpPost("CreateTestEngineers")]
-        [Authorize(Roles = "SuperAdmin,Board")]
+        [Authorize(Roles = "SuperAdmin,Admin,Board")]
         public async Task<IActionResult> CreateTestEngineers()
         {
             try
@@ -339,7 +339,7 @@ namespace Elsewedy_Capstone_System.Controllers
         }
 
         [HttpGet("GetUnregisteredStudents")]
-        [Authorize(Roles = "StaffAdmin,SuperAdmin,Board,CapstoneLead")]
+        [Authorize(Roles = "StaffAdmin,SuperAdmin,Admin,Board,CapstoneLead")]
         public async Task<IActionResult> GetUnregisteredStudents()
         {
             try
@@ -354,7 +354,7 @@ namespace Elsewedy_Capstone_System.Controllers
         }
 
         [HttpGet("CheckStudent/{accountId}")]
-        [Authorize(Roles = "StaffAdmin,SuperAdmin,Board")]
+        [Authorize(Roles = "StaffAdmin,SuperAdmin,Admin,Board")]
         public async Task<IActionResult> CheckStudent(long accountId)
         {
             try
@@ -369,7 +369,7 @@ namespace Elsewedy_Capstone_System.Controllers
         }
 
         [HttpGet("GetUnregisteredStudents/Test")]
-        [Authorize(Roles = "StaffAdmin,SuperAdmin,Board")]
+        [Authorize(Roles = "StaffAdmin,SuperAdmin,Admin,Board")]
         public async Task<IActionResult> GetUnregisteredStudentsTest()
         {
             try
@@ -384,7 +384,7 @@ namespace Elsewedy_Capstone_System.Controllers
         }
 
         [HttpPost("AddStudentsToCapstone")]
-        [Authorize(Roles = "StaffAdmin,SuperAdmin,Board")]
+        [Authorize(Roles = "StaffAdmin,SuperAdmin,Admin,Board")]
         public async Task<IActionResult> AddStudentsToCapstone([FromBody] AddStudentsToCapstoneRequest request)
         {
             try
@@ -402,7 +402,7 @@ namespace Elsewedy_Capstone_System.Controllers
         }
 
         [HttpGet("GetAllAccounts")]
-        [Authorize(Roles = "StaffAdmin,SuperAdmin,Board,CapstoneLead")]
+        [Authorize(Roles = "StaffAdmin,SuperAdmin,Admin,Board,CapstoneLead")]
         public async Task<IActionResult> GetAllAccounts([FromQuery] int? page = null, [FromQuery] int? pageSize = null, [FromQuery] string? search = null)
         {
             try
@@ -417,7 +417,7 @@ namespace Elsewedy_Capstone_System.Controllers
         }
 
         [HttpGet("GetAllRoles")]
-        [Authorize(Roles = "StaffAdmin,SuperAdmin,Board,CapstoneLead")]
+        [Authorize(Roles = "StaffAdmin,SuperAdmin,Admin,Board,CapstoneLead")]
         public async Task<IActionResult> GetAllRoles()
         {
             try
@@ -432,7 +432,7 @@ namespace Elsewedy_Capstone_System.Controllers
         }
 
         [HttpGet("GetBusinessEntities")]
-        [Authorize(Roles = "StaffAdmin,SuperAdmin,Board")]
+        [Authorize(Roles = "StaffAdmin,SuperAdmin,Admin,Board")]
         public async Task<IActionResult> GetBusinessEntities()
         {
             try
@@ -447,7 +447,7 @@ namespace Elsewedy_Capstone_System.Controllers
         }
 
         [HttpPost("AddRolesToAccounts")]
-        [Authorize(Roles = "StaffAdmin,SuperAdmin,Board")]
+        [Authorize(Roles = "StaffAdmin,SuperAdmin,Admin,Board")]
         public async Task<IActionResult> AddRolesToAccounts([FromBody] AddRolesToAccountsRequest request)
         {
             try

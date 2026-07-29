@@ -243,38 +243,36 @@ const Step4AddMembers = ({ onNext, onPrev, currentStep, user }) => {
     // Get students who are not already team members
     const assignedStudentIds = teamMembers.map(member => member.teamMemberAccountId);
     
-    // Filter by grade name (general grade like "Senior") if a team is selected
+    // Filter by class or grade
     let filteredStudents = students;
     if (selectedTeam) {
       const selectedTeamData = teams.find(team => team.id === parseInt(selectedTeam) || team.id === selectedTeam);
-      if (selectedTeamData && selectedTeamData.gradeName) {
-        // Extract the general grade name (e.g., "Senior" from "S2" or "Senior")
+      
+      // Prioritize filtering by gradeId for exact matching
+      if (selectedTeamData && selectedTeamData.gradeId) {
+        filteredStudents = students.filter(student => student.gradeId === selectedTeamData.gradeId);
+        console.log('Step5AddMembers - Filtering students by grade ID:', selectedTeamData.gradeId);
+      } 
+      // Fallback to grade name if gradeId is not available
+      else if (selectedTeamData && selectedTeamData.gradeName) {
         const teamGradeName = selectedTeamData.gradeName.trim();
-        
-        // Normalize grade name - if it's something like "S2", "S1", etc., look for "Senior"
-        // Otherwise, use the grade name as-is
         let targetGradeName = teamGradeName;
         
-        // If grade name starts with "S" and is a number (like S1, S2, S3), use "Senior"
         if (/^S\d+$/i.test(teamGradeName)) {
           targetGradeName = "Senior";
         }
-        // If grade name contains "Senior" or "senior", use "Senior"
         else if (teamGradeName.toLowerCase().includes("senior")) {
           targetGradeName = "Senior";
         }
         
-        // Filter students by grade name (case-insensitive)
         filteredStudents = students.filter(student => {
           if (!student.gradeName) return false;
           const studentGradeName = student.gradeName.trim();
           
-          // Check if student's grade name matches the target grade name
           if (studentGradeName.toLowerCase() === targetGradeName.toLowerCase()) {
             return true;
           }
           
-          // Also check if student's grade name contains the target (for variations)
           if (targetGradeName.toLowerCase() === "senior") {
             return studentGradeName.toLowerCase().includes("senior") || 
                    /^S\d+$/i.test(studentGradeName);
@@ -283,13 +281,11 @@ const Step4AddMembers = ({ onNext, onPrev, currentStep, user }) => {
           return false;
         });
         
-        console.log('Step5AddMembers - Filtering students by grade name:', targetGradeName, '(from team grade:', teamGradeName, ')');
-        console.log('Step5AddMembers - Students in same grade:', filteredStudents.length);
+        console.log('Step5AddMembers - Filtering students by grade name:', targetGradeName);
       } else if (selectedTeamData && selectedTeamData.classId) {
-        // Fallback to class ID if grade name is not available
+        // Fallback to class ID if neither gradeId nor gradeName is available
         filteredStudents = students.filter(student => student.classId === selectedTeamData.classId);
         console.log('Step5AddMembers - Filtering students by class ID (fallback):', selectedTeamData.classId);
-        console.log('Step5AddMembers - Students in same class:', filteredStudents.length);
       }
     }
     

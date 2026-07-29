@@ -82,7 +82,7 @@ namespace Elsewedy_Capstone_System.Controllers
         }
 
         [HttpPost("TeamMembers")]
-        [Authorize(Roles = "StaffAdmin,SuperAdmin,Board,Engineer,CapstoneLead")]
+        [Authorize(Roles = "StaffAdmin,SuperAdmin,Admin,Board,Engineer,CapstoneLead")]
         public async Task<IActionResult> CreateTeamMember([FromBody] CreateTeamMemberDto request)
         {
             try
@@ -98,7 +98,7 @@ namespace Elsewedy_Capstone_System.Controllers
         }
 
         [HttpDelete("TeamMembers/{id}")]
-        [Authorize(Roles = "StaffAdmin,SuperAdmin,Board,Engineer,CapstoneLead")]
+        [Authorize(Roles = "StaffAdmin,SuperAdmin,Admin,Board,Engineer,CapstoneLead")]
         public async Task<IActionResult> DeleteTeamMember(long id)
         {
             try
@@ -114,7 +114,7 @@ namespace Elsewedy_Capstone_System.Controllers
         }
 
         [HttpPut("Teams/{teamId}/AssignLeader")]
-        [Authorize(Roles = "StaffAdmin,SuperAdmin,Board,Engineer,CapstoneLead")]
+        [Authorize(Roles = "StaffAdmin,SuperAdmin,Admin,Board,Engineer,CapstoneLead")]
         public async Task<IActionResult> AssignTeamLeader(long teamId, [FromBody] AssignTeamLeaderRequest request)
         {
             try
@@ -163,7 +163,7 @@ namespace Elsewedy_Capstone_System.Controllers
         }
 
         [HttpPost("Teams/Create")]
-        [Authorize(Roles = "StaffAdmin,SuperAdmin,Board,Engineer,CapstoneLead")]
+        [Authorize(Roles = "StaffAdmin,SuperAdmin,Admin,Board,Engineer,CapstoneLead")]
         public async Task<IActionResult> CreateTeam([FromBody] CreateTeamRequest request)
         {
             try
@@ -179,7 +179,7 @@ namespace Elsewedy_Capstone_System.Controllers
         }
 
         [HttpPut("Teams/{id}")]
-        [Authorize(Roles = "StaffAdmin,SuperAdmin,Board,Engineer,CapstoneLead")]
+        [Authorize(Roles = "StaffAdmin,SuperAdmin,Admin,Board,Engineer,CapstoneLead")]
         public async Task<IActionResult> UpdateTeam(long id, [FromBody] UpdateTeamRequest request)
         {
             try
@@ -195,7 +195,7 @@ namespace Elsewedy_Capstone_System.Controllers
         }
 
         [HttpDelete("Teams/{id}")]
-        [Authorize(Roles = "StaffAdmin,SuperAdmin,Board,Engineer,CapstoneLead")]
+        [Authorize(Roles = "StaffAdmin,SuperAdmin,Admin,Board,Engineer,CapstoneLead")]
         public async Task<IActionResult> DeleteTeam(long id)
         {
             try

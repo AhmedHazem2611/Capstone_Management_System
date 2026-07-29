@@ -454,8 +454,15 @@ const AdminTasksPage = ({ currentUserId = null, user = null, setCurrentPage, set
     ])
 
     filteredTasks = filteredTasks.filter(task => {
-      // Keep task if it has NO specific assignee OR if the assignee is NOT in the staff list
-      return !task.assignedToId || !staffIds.has(String(task.assignedToId))
+      // Filter out tasks assigned explicitly to staff members
+      if (task.assignedToId && staffIds.has(String(task.assignedToId))) return false;
+      
+      // Filter out generic staff tasks (no grade, no team, no class, no assignee)
+      // These are meant for Capstone Leads or Engineers in their respective pages.
+      const isGenericStaffTask = !task.gradeId && !task.teamId && !task.classId && !task.assignedToId;
+      if (isGenericStaffTask) return false;
+
+      return true;
     })
 
     return filteredTasks

@@ -34,7 +34,7 @@ namespace Elsewedy_Capstone_System.Controllers
         }
 
         [HttpGet("ByTeam/{teamId}")]
-        [Authorize(Roles = "StaffAdmin,SuperAdmin,Board,Engineer,CapstoneLead")]
+        [Authorize(Roles = "StaffAdmin,SuperAdmin,Admin,Board,Engineer,CapstoneLead")]
         public async Task<IActionResult> GetProjectByTeam(long teamId)
         {
             try
@@ -60,6 +60,25 @@ namespace Elsewedy_Capstone_System.Controllers
                 if (error != null)
                 {
                     if (error == "No team found" || error == "Not authorized") return Forbid();
+                    return BadRequest(new { message = error });
+                }
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
+        [HttpPost("ByTeam/{teamId}")]
+        [Authorize(Roles = "StaffAdmin,SuperAdmin,Admin,Board,Engineer,CapstoneLead")]
+        public async Task<IActionResult> UpsertProjectByTeam(long teamId, [FromBody] ProjectUpsertDto request)
+        {
+            try
+            {
+                var (result, error) = await _projectService.UpsertProjectByTeamAsync(teamId, request.NameEn, request.NameAr, request.CompanyName, request.AdditionalInformation, request.ProjectDescription, (int)request.StatusId);
+                if (error != null)
+                {
                     return BadRequest(new { message = error });
                 }
                 return Ok(result);

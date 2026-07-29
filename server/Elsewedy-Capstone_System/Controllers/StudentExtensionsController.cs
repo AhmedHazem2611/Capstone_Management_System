@@ -18,7 +18,7 @@ namespace Elsewedy_Capstone_System.Controllers
         }
 
         [HttpGet]
-        [Authorize(Roles = "StaffAdmin,SuperAdmin,Board,Engineer,CapstoneLead")]
+        [Authorize(Roles = "StaffAdmin,SuperAdmin,Admin,Board,Engineer,CapstoneLead")]
         public async Task<IActionResult> GetStudentExtensions()
         {
             try
@@ -33,7 +33,7 @@ namespace Elsewedy_Capstone_System.Controllers
         }
 
         [HttpGet("WithAccountDetails")]
-        [Authorize(Roles = "StaffAdmin,SuperAdmin,Board,Engineer,CapstoneLead")]
+        [Authorize(Roles = "StaffAdmin,SuperAdmin,Admin,Board,Engineer,CapstoneLead")]
         public async Task<IActionResult> GetStudentsWithAccountDetails()
         {
             try
@@ -63,7 +63,7 @@ namespace Elsewedy_Capstone_System.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "StaffAdmin,SuperAdmin,Board,Engineer,CapstoneLead")]
+        [Authorize(Roles = "StaffAdmin,SuperAdmin,Admin,Board,Engineer,CapstoneLead")]
         public async Task<IActionResult> PostStudentExtension([FromBody] StudentExtensionDto request)
         {
             try
@@ -79,7 +79,7 @@ namespace Elsewedy_Capstone_System.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize(Roles = "StaffAdmin,SuperAdmin,Board,Engineer,CapstoneLead")]
+        [Authorize(Roles = "StaffAdmin,SuperAdmin,Admin,Board,Engineer,CapstoneLead")]
         public async Task<IActionResult> PutStudentExtension(long id, [FromBody] StudentExtensionDto request)
         {
             try
@@ -95,7 +95,7 @@ namespace Elsewedy_Capstone_System.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = "StaffAdmin,SuperAdmin,Board,Engineer,CapstoneLead")]
+        [Authorize(Roles = "StaffAdmin,SuperAdmin,Admin,Board,Engineer,CapstoneLead")]
         public async Task<IActionResult> DeleteStudentExtension(long id)
         {
             try

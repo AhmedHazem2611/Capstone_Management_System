@@ -62,7 +62,7 @@ namespace Elsewedy_Capstone_System.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "StaffAdmin,SuperAdmin,Board,Engineer,CapstoneLead")]
+        [Authorize(Roles = "StaffAdmin,SuperAdmin,Admin,Board,Engineer,CapstoneLead")]
         public async Task<IActionResult> CreateTask([FromBody] CreateTaskDto request)
         {
             try
@@ -81,7 +81,7 @@ namespace Elsewedy_Capstone_System.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize(Roles = "StaffAdmin,SuperAdmin,Board,Engineer,CapstoneLead")]
+        [Authorize(Roles = "StaffAdmin,SuperAdmin,Admin,Board,Engineer,CapstoneLead")]
         public async Task<IActionResult> UpdateTask(long id, [FromBody] UpdateTaskDto request)
         {
             try
@@ -103,7 +103,7 @@ namespace Elsewedy_Capstone_System.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = "StaffAdmin,SuperAdmin,Board,Engineer,CapstoneLead")]
+        [Authorize(Roles = "StaffAdmin,SuperAdmin,Admin,Board,Engineer,CapstoneLead")]
         public async Task<IActionResult> DeleteTask(long id)
         {
             try

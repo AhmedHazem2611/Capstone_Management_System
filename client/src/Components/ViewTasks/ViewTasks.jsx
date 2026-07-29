@@ -50,6 +50,7 @@ const ViewTasks = ({ teamIdFilter: initialTeamIdFilter = null, currentUserId = n
   const [statusFilter, setStatusFilter] = useState("all") // all | pending | submitted | completed
   const [gradeFilter, setGradeFilter] = useState("")
   const [classFilter, setClassFilter] = useState("")
+  const [engineerFilter, setEngineerFilter] = useState("")
   const [teamIdFilter, setTeamIdFilter] = useState(initialTeamIdFilter || "")
   const [assignedClasses, setAssignedClasses] = useState([])
   const { showSuccess, showError, showWarning, showInfo } = useNotification()
@@ -342,11 +343,34 @@ const ViewTasks = ({ teamIdFilter: initialTeamIdFilter = null, currentUserId = n
           }
         })
 
+        // Fetch engineers for each unique class to support hosted backend without native engineers array
+        const classIdsToFetch = [...new Set(normalizedTeams.map(t => t.classId).filter(Boolean))];
+        const classEngineersMap = {};
+        
+        await Promise.all(classIdsToFetch.map(async (classId) => {
+          try {
+            const revRes = await axiosInstance.get(`/Account/Reviewers/ByClass/${classId}`);
+            const rData = revRes.data;
+            const rList = Array.isArray(rData) ? rData : rData?.$values || [];
+            classEngineersMap[classId] = rList.map(r => r.fullNameEn || r.fullNameAr || "Engineer");
+          } catch (err) {
+            console.error(`Failed to fetch engineers for class ${classId}`, err);
+            classEngineersMap[classId] = [];
+          }
+        }));
+
+        // Attach the fetched engineers to the teams
+        const finalNormalizedTeams = normalizedTeams.map(t => ({
+          ...t,
+          engineers: classEngineersMap[t.classId] || []
+        }));
+
         if (isDevelopment() === 'development') {
-          console.log("Raw data loaded - teams:", normalizedTeams.length, "classes:", normalizedClasses.length, "grades:", normalizedGrades.length);
+          console.log("Raw data loaded - teams:", finalNormalizedTeams.length, "classes:", normalizedClasses.length, "grades:", normalizedGrades.length);
         }
 
         // Safely handle teams data
+        setTeams(finalNormalizedTeams)
         let teamsWithSupervisor = []
         if (Array.isArray(teamsRaw)) {
           teamsWithSupervisor = teamsRaw.filter(t => t.SupervisorAccountId || t.supervisorAccountId)
@@ -394,7 +418,7 @@ const ViewTasks = ({ teamIdFilter: initialTeamIdFilter = null, currentUserId = n
         setTasks(normalizedTasks)
         setGrades(normalizedGrades)
         setClasses(normalizedClasses)
-        setTeams(normalizedTeams)
+        setTeams(finalNormalizedTeams)
         setReports(normalizedReports)
       } catch (e) {
         if (isDevelopment() === 'development') {
@@ -456,26 +480,33 @@ const ViewTasks = ({ teamIdFilter: initialTeamIdFilter = null, currentUserId = n
       console.log(`getTeamStats called for teamId: ${teamId}, task count: ${teamTasks.length}`)
     }
 
-    // Count different statuses
-    const completed = teamTasks.filter((task) => task.statusId === STATUS_CONSTANTS.TASK_COMPLETED).length
-    const submitted = teamTasks.filter((task) => task.statusId === STATUS_CONSTANTS.TASK_SUBMITTED_ON_TIME || task.statusId === STATUS_CONSTANTS.TASK_SUBMITTED_LATE).length
-    const rejected = teamTasks.filter((task) => task.statusId === STATUS_CONSTANTS.TASK_REJECTED).length
-    const pending = teamTasks.filter((task) => task.statusId === STATUS_CONSTANTS.TASK_PENDING || task.isPendingTask).length
-    const submittedLate = teamTasks.filter((task) => task.statusId === STATUS_CONSTANTS.TASK_SUBMITTED_LATE).length
-    const completedLate = teamTasks.filter((task) => task.statusId === STATUS_CONSTANTS.TASK_COMPLETED_LATE).length
+    // Count different statuses safely using numeric values
+    const completed = teamTasks.filter((task) => {
+      const sId = Number(task.statusId)
+      return sId === STATUS_CONSTANTS.TASK_COMPLETED || sId === STATUS_CONSTANTS.TASK_COMPLETED_LATE
+    }).length
+    const submitted = teamTasks.filter((task) => {
+      const sId = Number(task.statusId)
+      return sId === STATUS_CONSTANTS.TASK_SUBMITTED_ON_TIME || sId === STATUS_CONSTANTS.TASK_SUBMITTED_LATE
+    }).length
+    const rejected = teamTasks.filter((task) => Number(task.statusId) === STATUS_CONSTANTS.TASK_REJECTED).length
+    const pending = teamTasks.filter((task) => Number(task.statusId) === STATUS_CONSTANTS.TASK_PENDING || task.isPendingTask).length
+    const submittedLate = teamTasks.filter((task) => Number(task.statusId) === STATUS_CONSTANTS.TASK_SUBMITTED_LATE).length
+    const completedLate = teamTasks.filter((task) => Number(task.statusId) === STATUS_CONSTANTS.TASK_COMPLETED_LATE).length
 
     // New counter for overdue tasks (التاسكات المتأخرة) - tasks that passed deadline without submission
     const overdue = teamTasks.filter((task) => {
+      const sId = Number(task.statusId)
       // SECURITY: Use server-provided isLate instead of client-side deadline checking
       if (task.isPendingTask) {
         return task.isLate || false
       }
       // Also check submitted/completed tasks that were late
-      if (task.statusId === STATUS_CONSTANTS.TASK_SUBMITTED_ON_TIME || task.statusId === STATUS_CONSTANTS.TASK_COMPLETED) {
+      if (sId === STATUS_CONSTANTS.TASK_SUBMITTED_ON_TIME || sId === STATUS_CONSTANTS.TASK_COMPLETED) {
         return task.isLate || false
       }
       // Status 11 and 13 are already marked as late
-      if (task.statusId === STATUS_CONSTANTS.TASK_SUBMITTED_LATE || task.statusId === STATUS_CONSTANTS.TASK_COMPLETED_LATE) {
+      if (sId === STATUS_CONSTANTS.TASK_SUBMITTED_LATE || sId === STATUS_CONSTANTS.TASK_COMPLETED_LATE) {
         return true
       }
       return false
@@ -529,19 +560,30 @@ const ViewTasks = ({ teamIdFilter: initialTeamIdFilter = null, currentUserId = n
       String(classFilter || "").trim().length === 0 ||
       (team.className || "").toLowerCase().includes(String(classFilter || "").toLowerCase())
 
+    const matchesEngineer =
+      String(engineerFilter || "").trim().length === 0 ||
+      (team.engineers
+        ? (team.engineers.length > 0
+            ? team.engineers.some(eng => eng.toLowerCase() === String(engineerFilter || "").toLowerCase())
+            : String(engineerFilter || "").toLowerCase() === "unassigned")
+        : (team.supervisorName || "Unassigned").toLowerCase() === String(engineerFilter || "").toLowerCase())
+
     // Search filter - matches team name, class name, or grade name
     const matchesSearch =
       String(searchTerm || "").trim().length === 0 ||
       (team.teamName || "").toLowerCase().includes(String(searchTerm || "").toLowerCase()) ||
       (team.className || "").toLowerCase().includes(String(searchTerm || "").toLowerCase()) ||
-      (team.gradeName || "").toLowerCase().includes(String(searchTerm || "").toLowerCase())
+      (team.gradeName || "").toLowerCase().includes(String(searchTerm || "").toLowerCase()) ||
+      (team.engineers 
+        ? team.engineers.some(eng => eng.toLowerCase().includes(String(searchTerm || "").toLowerCase()))
+        : (team.supervisorName || "").toLowerCase().includes(String(searchTerm || "").toLowerCase()))
 
     // Debug logging for filtering
-    if (isDevelopment() === 'development' && (gradeFilter || classFilter || searchTerm)) {
-      console.log(`Team filtering - Grade: ${matchesGrade}, Class: ${matchesClass}, Search: ${matchesSearch}`)
+    if (isDevelopment() === 'development' && (gradeFilter || classFilter || engineerFilter || searchTerm)) {
+      console.log(`Team filtering - Grade: ${matchesGrade}, Class: ${matchesClass}, Engineer: ${matchesEngineer}, Search: ${matchesSearch}`)
     }
 
-    return matchesGrade && matchesClass && matchesSearch
+    return matchesGrade && matchesClass && matchesEngineer && matchesSearch
   })
 
   // Combine submissions with task data to get real task names
@@ -549,30 +591,37 @@ const ViewTasks = ({ teamIdFilter: initialTeamIdFilter = null, currentUserId = n
   const getTasksForTeam = (teamId) => {
     if (!teams || teams.length === 0 || !tasks || tasks.length === 0) return []
     
-    const team = teams.find((t) => t.id === teamId)
+    const team = teams.find((t) => Number(t.id) === Number(teamId))
     if (!team) return []
 
     // Get all tasks for this team's grade
     const teamTasks = tasks.filter((task) => {
-      const taskGradeId = task.gradeId
-      const taskClassId = task.classId
-      const taskTeamId = task.teamId
+      const taskGradeId = task.gradeId != null ? Number(task.gradeId) : null
+      const taskClassId = task.classId != null ? Number(task.classId) : null
+      const taskTeamId = task.teamId != null ? Number(task.teamId) : null
+
+      const teamGradeId = team.gradeId != null ? Number(team.gradeId) : null
+      const teamClassId = team.classId != null ? Number(team.classId) : null
+      const teamIdNum = Number(team.id)
 
       // Task is for this team
-      if (taskTeamId === team.id) return true
+      if (taskTeamId === teamIdNum) return true
       
       // Task is for this team's class (no specific team)
-      if (taskClassId === team.classId && !taskTeamId) return true
+      if (taskClassId === teamClassId && !taskTeamId) return true
       
       // Task is for this team's grade (no specific class or team)
-      if (taskGradeId === team.gradeId && !taskClassId && !taskTeamId) return true
+      if (taskGradeId === teamGradeId && !taskClassId && !taskTeamId) return true
+
+      // Task has a submission from this team
+      if (submissions.some((s) => Number(s.taskId) === Number(task.id) && Number(s.teamId) === teamIdNum)) return true
 
       return false
     })
 
     return teamTasks.map((task) => {
       // Find submission for this task
-      const submission = submissions.find((s) => s.taskId === task.id && s.teamId === team.id)
+      const submission = submissions.find((s) => Number(s.taskId) === Number(task.id) && Number(s.teamId) === Number(team.id))
 
       return {
         ...task,
@@ -585,7 +634,7 @@ const ViewTasks = ({ teamIdFilter: initialTeamIdFilter = null, currentUserId = n
         className: team.className || "",
         teamId: team.id,
         // Use submission status if exists, otherwise task status
-        statusId: submission?.statusId || task.statusId || 1,
+        statusId: submission?.statusId != null ? Number(submission.statusId) : (task.statusId != null ? Number(task.statusId) : 1),
         submittedDate: submission?.submittedDate || null,
         glink: submission?.glink || "",
         note: submission?.note || "",
@@ -1124,6 +1173,19 @@ const ViewTasks = ({ teamIdFilter: initialTeamIdFilter = null, currentUserId = n
                       );
                     })}
                   </select>
+                  
+                  {/* Engineer Filter */}
+                  {!isEngineerUser && (
+                    <select value={engineerFilter} onChange={(e) => setEngineerFilter(e.target.value)} className="filter-select">
+                      <option value="">All Engineers</option>
+                      <option value="Unassigned">Unassigned</option>
+                      {Array.from(new Set(teams.flatMap(t => t.engineers ? t.engineers : [t.supervisorName]).filter(Boolean))).map((engName, idx) => (
+                        <option key={`eng-${idx}`} value={engName}>
+                          {engName}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </>
               );
             })()}
@@ -1204,23 +1266,38 @@ const ViewTasks = ({ teamIdFilter: initialTeamIdFilter = null, currentUserId = n
                       <span className="team-class">Class: {team.className || "N/A"}</span>
                       <span className="team-grade">Grade: {team.gradeName || "N/A"}</span>
                     </div>
-                    <div className="team-stats">
-                      <div className="stat-item">
-                        <span className="stat-label">Completed:</span>
-                        <span className="stat-value completed">{stats.completed}</span>
+                    {/* Progress Bar replaces the 4 stat squares */}
+                    <div className="team-progress-container" style={{ margin: '16px 0', padding: '0 8px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.85rem', color: '#4b5563', fontWeight: '600' }}>
+                        <span>Overall Progress</span>
+                        <span>{stats.completed} / {stats.total} Tasks ({Math.round((stats.completed / Math.max(stats.total, 1)) * 100)}%)</span>
                       </div>
-                      <div className="stat-item">
-                        <span className="stat-label">Submitted:</span>
-                        <span className="stat-value submitted">{stats.submitted}</span>
+                      <div style={{ width: '100%', height: '10px', backgroundColor: '#e5e7eb', borderRadius: '5px', overflow: 'hidden' }}>
+                        <div style={{ 
+                          width: `${Math.round((stats.completed / Math.max(stats.total, 1)) * 100)}%`, 
+                          height: '100%', 
+                          backgroundColor: '#10b981',
+                          transition: 'width 0.5s ease-in-out'
+                        }}></div>
                       </div>
-                      <div className="stat-item">
-                        <span className="stat-label">Rejected:</span>
-                        <span className="stat-value rejected">{stats.rejected}</span>
-                      </div>
-                      <div className="stat-item">
-                        <span className="stat-label">Overdue Tasks:</span>
-                        <span className="stat-value overdue">{stats.overdue}</span>
-                      </div>
+                    </div>
+                    <div className="team-engineer-bottom" style={{ 
+                      marginTop: '16px', 
+                      paddingTop: '12px',
+                      borderTop: '1px solid #f3f4f6',
+                      fontSize: '0.9rem', 
+                      color: '#4b5563',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}>
+                      <Users size={14} style={{ color: '#6b7280' }} />
+                      <span style={{ fontWeight: '600' }}>Engineer(s):</span> 
+                      <span style={{ color: '#6b7280' }}>
+                        {team.engineers 
+                          ? (team.engineers.length > 0 ? team.engineers.join(", ") : "Unassigned")
+                          : (team.supervisorName || "Unassigned")}
+                      </span>
                     </div>
                   </div>
                   <div className="team-actions">

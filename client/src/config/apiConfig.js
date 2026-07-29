@@ -2,7 +2,7 @@
 // Easy to modify for different environments
 
 // Change this to switch between development and production
-const CURRENT_ENV = 'development'; // Change to 'production' when deploying
+export const CURRENT_ENV = 'development'; // Change to 'production' when deploying
 
 const config = {
   development: {
@@ -11,7 +11,7 @@ const config = {
     DEBUG: true
   },
   production: {
-    API_BASE_URL: 'http://sewedycapstoneback.runasp.net/api', // Replace with your production URL
+    API_BASE_URL: 'https://capstonic.runasp.net/api', // Replace with your production URL
     API_TIMEOUT: 20000,
     DEBUG: false
   }

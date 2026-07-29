@@ -34,7 +34,7 @@ namespace Elsewedy_Capstone_System.Controllers
         }
 
         [HttpGet("Board/Statistics")]
-        [Authorize(Roles = "Board,SuperAdmin,StaffAdmin,CapstoneLead")]
+        [Authorize(Roles = "Board,SuperAdmin,Admin,StaffAdmin,CapstoneLead")]
         public async Task<IActionResult> GetBoardStatistics()
         {
             try
@@ -49,7 +49,7 @@ namespace Elsewedy_Capstone_System.Controllers
         }
 
         [HttpGet("Board/EngineersByClass")]
-        [Authorize(Roles = "Board,SuperAdmin,StaffAdmin,CapstoneLead")]
+        [Authorize(Roles = "Board,SuperAdmin,Admin,StaffAdmin,CapstoneLead")]
         public async Task<IActionResult> GetEngineersByClass()
         {
             try
@@ -64,7 +64,7 @@ namespace Elsewedy_Capstone_System.Controllers
         }
 
         [HttpGet("Board/TeamsProgress")]
-        [Authorize(Roles = "Board,SuperAdmin,StaffAdmin,CapstoneLead")]
+        [Authorize(Roles = "Board,SuperAdmin,Admin,StaffAdmin,CapstoneLead")]
         public async Task<IActionResult> GetTeamsProgress()
         {
             try
@@ -79,7 +79,7 @@ namespace Elsewedy_Capstone_System.Controllers
         }
 
         [HttpGet("Board/TaskCompletionByStatus")]
-        [Authorize(Roles = "Board,SuperAdmin,StaffAdmin,CapstoneLead")]
+        [Authorize(Roles = "Board,SuperAdmin,Admin,StaffAdmin,CapstoneLead")]
         public async Task<IActionResult> GetTaskCompletionByStatus()
         {
             try
@@ -94,7 +94,7 @@ namespace Elsewedy_Capstone_System.Controllers
         }
 
         [HttpGet("Board/TeamsByGrade")]
-        [Authorize(Roles = "Board,SuperAdmin,StaffAdmin,CapstoneLead")]
+        [Authorize(Roles = "Board,SuperAdmin,Admin,StaffAdmin,CapstoneLead")]
         public async Task<IActionResult> GetTeamsByGrade()
         {
             try
@@ -109,7 +109,7 @@ namespace Elsewedy_Capstone_System.Controllers
         }
 
         [HttpGet("Board/TeamsCompletedAllTasks")]
-        [Authorize(Roles = "Board,SuperAdmin,StaffAdmin,CapstoneLead")]
+        [Authorize(Roles = "Board,SuperAdmin,Admin,StaffAdmin,CapstoneLead")]
         public async Task<IActionResult> GetTeamsCompletedAllTasks()
         {
             try

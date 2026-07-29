@@ -7,4 +7,5 @@ public interface IProjectService
     Task<Project?> GetMyTeamProjectAsync(long userId);
     Task<Project?> GetProjectByTeamAsync(long teamId);
     Task<(Project? project, string? error)> UpsertMyTeamProjectAsync(long userId, string role, string? nameEn, string? nameAr, string? companyName, string? additionalInfo, string? projectDescription, int statusId);
+    Task<(Project? project, string? error)> UpsertProjectByTeamAsync(long teamId, string? nameEn, string? nameAr, string? companyName, string? additionalInfo, string? projectDescription, int statusId);
 }

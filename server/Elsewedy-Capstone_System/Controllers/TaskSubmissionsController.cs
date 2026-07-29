@@ -76,7 +76,7 @@ namespace Elsewedy_Capstone_System.Controllers
         }
 
         [HttpPost("{id}/review")]
-        [Authorize(Roles = "StaffAdmin,SuperAdmin,Board,Engineer,CapstoneLead")]
+        [Authorize(Roles = "StaffAdmin,SuperAdmin,Admin,Board,Engineer,CapstoneLead")]
         public async Task<IActionResult> MarkReviewed(int id, [FromBody] ReviewRequest? request)
         {
             try
@@ -94,7 +94,7 @@ namespace Elsewedy_Capstone_System.Controllers
         }
 
         [HttpPost("{id}/reject")]
-        [Authorize(Roles = "StaffAdmin,SuperAdmin,Board,Engineer,CapstoneLead")]
+        [Authorize(Roles = "StaffAdmin,SuperAdmin,Admin,Board,Engineer,CapstoneLead")]
         public async Task<IActionResult> RejectTask(int id)
         {
             try
@@ -110,7 +110,7 @@ namespace Elsewedy_Capstone_System.Controllers
         }
 
         [HttpPost("{id}/feedback")]
-        [Authorize(Roles = "StaffAdmin,SuperAdmin,Board,Engineer,CapstoneLead")]
+        [Authorize(Roles = "StaffAdmin,SuperAdmin,Admin,Board,Engineer,CapstoneLead")]
         public async Task<IActionResult> AddFeedback(int id, [FromBody] FeedbackRequest? request)
         {
             try

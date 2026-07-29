@@ -169,16 +169,11 @@ const MyProjectPage = ({ user }) => {
             <span className={`role-badge ${isLeader ? 'leader' : 'member'}`}>{isLeader ? 'Team Leader' : 'Team Member'}</span>
           </div>
           {team && <p className="subtitle">Team: {team.teamName || "My Team"}</p>}
-          <p className="note">{isLeader ? "You can edit your team's project details." : "View only. Only the team leader can edit project details."}</p>
+          <p className="note">You can edit your team's project details and save changes directly to the database.</p>
         </div>
       </div>
 
-      
-
       <div className="meta-bar">
-        {!isLeader && (
-          <div className="readonly-banner">You are viewing your team project in read-only mode.</div>
-        )}
         {!!lastSavedAt && (
           <div className="last-saved">Last saved {lastSavedAt.toLocaleTimeString()}</div>
         )}
@@ -197,7 +192,6 @@ const MyProjectPage = ({ user }) => {
               className="input"
               value={form.nameEn}
               onChange={(e) => handleChange("nameEn", e.target.value)}
-              disabled={!isLeader}
               placeholder="e.g., Smart Energy Monitoring System"
               maxLength={120}
             />
@@ -214,7 +208,6 @@ const MyProjectPage = ({ user }) => {
               className="input"
               value={form.nameAr}
               onChange={(e) => handleChange("nameAr", e.target.value)}
-              disabled={!isLeader}
               placeholder="مثال: نظام مراقبة الطاقة الذكي"
               maxLength={120}
             />
@@ -237,7 +230,6 @@ const MyProjectPage = ({ user }) => {
               rows={8}
               value={form.description}
               onChange={(e) => handleChange("description", e.target.value)}
-              disabled={!isLeader}
               placeholder="Describe the project scope, objectives, and technologies used"
               maxLength={1200}
             />
@@ -254,7 +246,6 @@ const MyProjectPage = ({ user }) => {
               rows={4}
               value={form.additionalInformation}
               onChange={(e) => handleChange("additionalInformation", e.target.value)}
-              disabled={!isLeader}
               placeholder="Any extra notes or links"
               maxLength={800}
             />
@@ -264,13 +255,11 @@ const MyProjectPage = ({ user }) => {
             </div>
           </div>
 
-          {isLeader && (
-            <div className="actions">
-              <button className="save-btn" onClick={handleSave} disabled={isSaving}>
-                {isSaving ? 'Saving...' : 'Save'}
-              </button>
-            </div>
-          )}
+          <div className="actions">
+            <button className="save-btn" onClick={handleSave} disabled={isSaving}>
+              {isSaving ? 'Saving...' : 'Save'}
+            </button>
+          </div>
         </div>
 
         <div className="right-column">

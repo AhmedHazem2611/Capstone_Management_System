@@ -280,8 +280,8 @@ const BoardDashboard = ({ user, setCurrentPage }) => {
     return {
       ...statistics,
       totalTeams: filteredTeamsCount,
-      totalEngineers: filteredEngineersCount,
-      totalStudents: filteredStudentsCount
+      totalEngineers: (globalGradeFilter || globalClassFilter) ? filteredEngineersCount : statistics.totalEngineers,
+      totalStudents: (globalGradeFilter || globalClassFilter) ? filteredStudentsCount : statistics.totalStudents
     };
   }, [statistics, filteredTeamsProgress, filteredEngineersByClass]);
 

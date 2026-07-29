@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { axiosInstance } from "../../utils/authService"
-import { ArrowLeft, Users, FileText, ClipboardList } from "lucide-react"
+import { ArrowLeft, Users, FileText, ClipboardList, Edit3, Save, X } from "lucide-react"
+import toast from "react-hot-toast"
 import "./TeamProfile.css"
 
 const TeamProfile = ({ teamId, user, setCurrentPage }) => {
@@ -10,6 +11,14 @@ const TeamProfile = ({ teamId, user, setCurrentPage }) => {
   const [reviewers, setReviewers] = useState([])
   const [supervisors, setSupervisors] = useState([])
   const [project, setProject] = useState(null)
+  const [isEditing, setIsEditing] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [editForm, setEditForm] = useState({
+    nameEn: "",
+    nameAr: "",
+    description: "",
+    additionalInformation: "",
+  })
 
   const safeTeamId = useMemo(() => teamId, [teamId])
 
@@ -94,6 +103,50 @@ const TeamProfile = ({ teamId, user, setCurrentPage }) => {
 
   useEffect(() => { load() }, [safeTeamId])
 
+  useEffect(() => {
+    if (project) {
+      setEditForm({
+        nameEn: project.nameEn || "",
+        nameAr: project.nameAr || "",
+        description: project.description || "",
+        additionalInformation: project.additionalInformation || "",
+      })
+    }
+  }, [project])
+
+  const handleSaveEdit = async () => {
+    if (!safeTeamId) return
+    try {
+      setSaving(true)
+      toast.loading("Saving project info...", { id: "save-team-profile" })
+      await axiosInstance.post(`/Project/ByTeam/${safeTeamId}`, {
+        nameEn: editForm.nameEn,
+        nameAr: editForm.nameAr,
+        additionalInformation: editForm.additionalInformation,
+        projectDescription: editForm.description,
+        statusId: 1
+      })
+      toast.success("Team info updated successfully!", { id: "save-team-profile" })
+      
+      const newProj = {
+        nameEn: editForm.nameEn,
+        nameAr: editForm.nameAr,
+        description: editForm.description,
+        additionalInformation: editForm.additionalInformation
+      }
+      setProject(newProj)
+      if (editForm.nameEn && team) {
+        setTeam(prev => ({ ...prev, teamName: editForm.nameEn }))
+      }
+      setIsEditing(false)
+    } catch (err) {
+      console.error("Failed to update team profile:", err)
+      toast.error(err?.response?.data?.message || "Failed to update team info", { id: "save-team-profile" })
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return (
     <div className="team-profile">
       <div className="profile-hero">
@@ -123,11 +176,105 @@ const TeamProfile = ({ teamId, user, setCurrentPage }) => {
                     <div className="project-title-ar">{project.nameAr}</div>
                   )}
                 </div>
-                
+                <button
+                  className="profile-edit-btn"
+                  onClick={() => {
+                    if (!isEditing) {
+                      setEditForm({
+                        nameEn: project?.nameEn || "",
+                        nameAr: project?.nameAr || "",
+                        description: project?.description || "",
+                        additionalInformation: project?.additionalInformation || "",
+                      })
+                    }
+                    setIsEditing(!isEditing)
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '6px 14px',
+                    backgroundColor: isEditing ? '#e5e7eb' : '#dc2626',
+                    color: isEditing ? '#374151' : '#ffffff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontWeight: '600',
+                    fontSize: '0.85rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  {isEditing ? <X size={16} /> : <Edit3 size={16} />}
+                  {isEditing ? 'Cancel' : 'Edit Info'}
+                </button>
               </div>
             </div>
 
-            {project ? (
+            {isEditing ? (
+              <div className="project-edit-form" style={{ display: 'flex', flexDirection: 'column', gap: '14px', padding: '12px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: '600', color: '#4b5563' }}>Project Name (EN)</label>
+                  <input
+                    type="text"
+                    value={editForm.nameEn}
+                    onChange={(e) => setEditForm({ ...editForm, nameEn: e.target.value })}
+                    style={{ padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '14px' }}
+                    placeholder="English Project Name"
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: '600', color: '#4b5563' }}>Project Name (AR)</label>
+                  <input
+                    type="text"
+                    value={editForm.nameAr}
+                    onChange={(e) => setEditForm({ ...editForm, nameAr: e.target.value })}
+                    style={{ padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '14px' }}
+                    placeholder="Arabic Project Name"
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: '600', color: '#4b5563' }}>Description</label>
+                  <textarea
+                    rows={4}
+                    value={editForm.description}
+                    onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                    style={{ padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '14px' }}
+                    placeholder="Project Description"
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: '600', color: '#4b5563' }}>Additional Information</label>
+                  <textarea
+                    rows={3}
+                    value={editForm.additionalInformation}
+                    onChange={(e) => setEditForm({ ...editForm, additionalInformation: e.target.value })}
+                    style={{ padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '14px' }}
+                    placeholder="Additional details..."
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
+                  <button
+                    onClick={handleSaveEdit}
+                    disabled={saving}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '8px 16px',
+                      backgroundColor: '#10b981',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontWeight: '600',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <Save size={16} />
+                    {saving ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </div>
+              </div>
+            ) : project ? (
               <div className="project-body">
                 <div className="project-meta">
                   <div className="meta-item">
@@ -160,7 +307,7 @@ const TeamProfile = ({ teamId, user, setCurrentPage }) => {
                 </div>
               </div>
             ) : (
-              <div className="empty">No project details found for this team.</div>
+              <div className="empty" style={{ padding: '16px' }}>No project details found for this team. Click "Edit Info" to create them!</div>
             )}
           </div>
 

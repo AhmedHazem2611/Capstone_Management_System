@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Eye, EyeOff, Lock, Mail, LogIn, AlertCircle, Loader2 } from "lucide-react";
 import { authService } from "../../utils/authService";
 import { validators } from "../../utils/inputValidation";
+import { CURRENT_ENV } from "../../config/apiConfig";
 
 const Login = ({ onLoginSuccess }) => {
   const [formData, setFormData] = useState({
@@ -11,6 +12,7 @@ const Login = ({ onLoginSuccess }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showDemoMenu, setShowDemoMenu] = useState(false);
   const [rateLimited, setRateLimited] = useState({ active: false, seconds: 0, totalSeconds: 0 });
   const [countdownId, setCountdownId] = useState(null);
   const [retryUntil, setRetryUntil] = useState(null);
@@ -173,6 +175,30 @@ const Login = ({ onLoginSuccess }) => {
       setCapsLockOn(true);
     } else {
       setCapsLockOn(false);
+    }
+  };
+
+  const demoAccounts = [
+    { role: 'Student', email: 'I.H.Ibrahim@sewedy.com', password: 'Itsoma12345', icon: '🎓', color: 'from-blue-500 to-blue-600' },
+    { role: 'Capstone Lead', email: 'demo_lead@example.com', password: 'password123', icon: '⭐', color: 'from-purple-500 to-purple-600' },
+    { role: 'Super Admin', email: 'demo_super@example.com', password: 'password123', icon: '👑', color: 'from-red-500 to-red-600' },
+    { role: 'Staff Admin', email: 'demo_staff@example.com', password: 'password123', icon: '🛡️', color: 'from-orange-500 to-orange-600' },
+    { role: 'Engineer', email: 'AlaaAbdelrahman@sewedy.com', password: 'password123', icon: '🔧', color: 'from-cyan-500 to-cyan-600' },
+    { role: 'Board', email: 'demo_board@example.com', password: 'password123', icon: '💼', color: 'from-indigo-500 to-indigo-600' },
+  ];
+
+  const handleDemoLogin = async (email, password = "password123") => {
+    setIsLoading(true);
+    setError("");
+    try {
+      const response = await authService.login(email, password);
+      if (onLoginSuccess && response.user) {
+        onLoginSuccess(response.user);
+      }
+    } catch (err) {
+      setError("Demo login failed: " + (err.response?.data?.message || err.message));
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -360,8 +386,44 @@ const Login = ({ onLoginSuccess }) => {
               </button>
             </form>
 
+            {/* Demo Login Toggle */}
+            <div className="mt-8 relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500 font-medium tracking-wide">OR</span>
+              </div>
+            </div>
+            
+            <button
+              type="button"
+              onClick={() => setShowDemoMenu(!showDemoMenu)}
+              className="mt-6 w-full bg-white border-2 border-gray-200 hover:border-red-300 hover:bg-red-50/50 text-gray-700 font-bold py-3 px-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 shadow-sm"
+            >
+              🚀 Quick Demo Login
+            </button>
+
+            {/* Demo Menu */}
+            {showDemoMenu && (
+              <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-3 animate-in fade-in slide-in-from-top-4 duration-300">
+                {demoAccounts.map((acc, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => handleDemoLogin(acc.email, acc.password)}
+                    disabled={isLoading}
+                    className={`bg-gradient-to-r ${acc.color} shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 text-white rounded-xl p-3 flex flex-col items-center justify-center gap-2 opacity-95 hover:opacity-100 disabled:opacity-50 border border-white/20`}
+                  >
+                    <span className="text-2xl drop-shadow-md">{acc.icon}</span>
+                    <span className="text-[11px] sm:text-xs font-bold tracking-wide">{acc.role}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
             {/* Footer */}
-            <div className="mt-10 pt-6 border-t border-gray-200/60 text-center">
+            <div className="mt-8 pt-6 border-t border-gray-200/60 text-center">
               <p className="text-sm text-gray-600">
                 Don't have an account?{" "}
                 <span className="text-red-600 font-semibold cursor-default hover:text-red-700 transition-colors">

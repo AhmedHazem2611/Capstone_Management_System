@@ -55,7 +55,7 @@ export const isReviewer = (user) => {
  * @returns {boolean} - True if user is a super admin or capstone lead
  */
 export const isSuperAdmin = (user) => {
-  return hasRole(user, "superadmin") || hasRole(user, "super admin") || hasRole(user, "capstonelead") || hasRole(user, "CapstoneLead");
+  return hasRole(user, "superadmin") || hasRole(user, "super admin") || hasRole(user, "admin") || hasRole(user, "capstonelead") || hasRole(user, "CapstoneLead");
 };
 
 /**
@@ -159,6 +159,22 @@ export const canAccessPage = (user, pageName) => {
       "admin-tasks",
       "super-admin",
       "team-profile",
+    ],
+    "admin": [
+      "dashboard",
+      "phases",
+      "reports",
+      "task-details",
+      "phase-details",
+      "teams-progress",
+      "view-tasks",
+      "admin-tasks",
+      "super-admin",
+      "team-profile",
+      "user-reports",
+      "my-assigned-tasks",
+      "engineers-tasks",
+      "team-submissions",
     ],
     "superadmin": [
       "dashboard",

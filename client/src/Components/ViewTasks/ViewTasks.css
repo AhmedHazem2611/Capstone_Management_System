@@ -343,6 +343,7 @@
 .team-details {
   display: flex;
   justify-content: center;
+  flex-wrap: wrap;
   gap: 20px;
   font-size: 15px;
   margin-bottom: 24px;
@@ -352,8 +353,6 @@
   max-width: 100%;
 }
 
-
-
 .team-class,
 .team-grade {
   display: flex;
@@ -361,13 +360,10 @@
   gap: 6px;
   padding: 6px 12px;
   background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
   border-radius: 8px;
-  color: #ef4444;
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 150px;
+  text-align: center;
+  word-break: break-word;
 }
 
 .team-stats {

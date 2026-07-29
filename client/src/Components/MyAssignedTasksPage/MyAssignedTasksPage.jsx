@@ -7,6 +7,7 @@ import { format, parseISO } from "date-fns"
 import { Clock, Calendar, AlertTriangle, CheckCircle, Upload, X, AlertCircle } from "lucide-react"
 import { STATUS_CONSTANTS, StatusHelpers } from "../../utils/statusConstants"
 import { getCurrentWeekNumber, getWeekDateRange, groupTasksByWeek } from "../../utils/weekUtils";
+import { isCapstoneLead, isEngineer } from "../../utils/roleUtils";
 import "../PhasesPage/PhasesPage.css" // Use PhasesPage design
 
 const MyAssignedTasksPage = ({ user, currentUserId, setCurrentPage, setSelectedTask }) => {
@@ -62,10 +63,8 @@ const MyAssignedTasksPage = ({ user, currentUserId, setCurrentPage, setSelectedT
             // Determine my role context
             // If I am a Capstone Lead, I look for tasks from Super Admins.
             // If I am an Engineer, I look for tasks from Capstone Leads.
-            // We can check user role from 'user' prop or current context
-            // Assuming 'user' prop has roles.
-            const isMyRoleLead = user?.roles?.includes("CapstoneLead") || user?.roles?.includes("capstone lead") || user?.role === "CapstoneLead"
-            const isMyRoleEngineer = user?.roles?.includes("Engineer") || user?.roles?.includes("engineer") || user?.role === "Engineer"
+            const isMyRoleLead = isCapstoneLead(user)
+            const isMyRoleEngineer = isEngineer(user)
 
             // Filter tasks
             const myTasks = allTasks.filter(t => {

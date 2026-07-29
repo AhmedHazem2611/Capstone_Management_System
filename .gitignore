@@ -3,3 +3,13 @@ node_modules/
 build/
 dist/
 .env
+
+# .NET / C#
+bin/
+obj/
+[Bb]in/
+[Oo]bj/
+*.user
+*.suo
+.vs/
+Publish/

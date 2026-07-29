@@ -56,7 +56,7 @@ public class GradeService : IGradeService
     {
         if (string.IsNullOrWhiteSpace(role)) return false;
         role = role.Replace(" ", string.Empty, StringComparison.OrdinalIgnoreCase);
-        return role.Equals("SuperAdmin", StringComparison.OrdinalIgnoreCase)
+        return (role.Equals("SuperAdmin", StringComparison.OrdinalIgnoreCase) || role.Equals("Admin", StringComparison.OrdinalIgnoreCase))
             || role.Equals("Board", StringComparison.OrdinalIgnoreCase)
             || role.Equals("StaffAdmin", StringComparison.OrdinalIgnoreCase)
             || role.Equals("Engineer", StringComparison.OrdinalIgnoreCase)

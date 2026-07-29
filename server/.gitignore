@@ -1,0 +1,9 @@
+[Bb]in/
+[Oo]bj/
+*.user
+*.userosscache
+*.suo
+*.userprefs
+*.DS_Store
+.vs/
+.vscode/
