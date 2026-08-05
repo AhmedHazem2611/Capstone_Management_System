@@ -329,27 +329,47 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
     setViewMode("grid")
   }
 
+  const getTasksForTeam = (teamId) => {
+    if (!teams || teams.length === 0 || !tasks || tasks.length === 0) return []
+
+    const team = teams.find((t) => Number(t.id) === Number(teamId))
+    if (!team) return []
+
+    const teamIdNum = Number(team.id)
+    const teamGradeId = team.gradeId != null ? Number(team.gradeId) : null
+    const teamClassId = team.classId != null ? Number(team.classId) : null
+
+    return tasks.filter((task) => {
+      const taskGradeId = task.gradeId != null ? Number(task.gradeId) : null
+      const taskClassId = task.classId != null ? Number(task.classId) : null
+      const taskTeamId = task.teamId != null ? Number(task.teamId) : null
+
+      if (taskTeamId === teamIdNum) return true
+      if (taskClassId === teamClassId && !taskTeamId) return true
+      if (taskGradeId === teamGradeId && !taskClassId && !taskTeamId) return true
+
+      const hasSubmission = submissions.some(s => Number(s.teamId) === teamIdNum && Number(s.taskId) === Number(task.id))
+      if (hasSubmission) return true
+
+      return false
+    })
+  }
+
   const getTeamStats = (team) => {
     if (!team) return { done: 0, total: 0 }
-    const teamInfo = {
-      gradeId: team.gradeId,
-      classId: team.classId,
-      teamId: team.id
-    }
-    const teamTasks = filterTasksForTeam(tasks, teamInfo)
     
-    // Submissions for this team
+    const teamTasks = getTasksForTeam(team.id)
     const teamSubmissions = submissions.filter(s => Number(s.teamId) === Number(team.id))
     
     // Count submitted + completed tasks
     const submittedCount = teamSubmissions.filter(s => {
-      return s.statusId === STATUS_CONSTANTS.TASK_SUBMITTED_ON_TIME ||
-             s.statusId === STATUS_CONSTANTS.TASK_SUBMITTED_LATE ||
-             s.statusId === STATUS_CONSTANTS.TASK_COMPLETED ||
-             s.statusId === STATUS_CONSTANTS.TASK_COMPLETED_LATE
+      const sId = Number(s.statusId)
+      return sId === STATUS_CONSTANTS.TASK_SUBMITTED_ON_TIME ||
+             sId === STATUS_CONSTANTS.TASK_SUBMITTED_LATE ||
+             sId === STATUS_CONSTANTS.TASK_COMPLETED ||
+             sId === STATUS_CONSTANTS.TASK_COMPLETED_LATE
     }).length
 
-    // Ensure total is at least as large as done submissions count, so percentage never exceeds 100% or divides by 0
     const total = Math.max(teamTasks.length, submittedCount)
 
     return {
