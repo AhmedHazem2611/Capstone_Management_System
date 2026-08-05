@@ -1315,116 +1315,212 @@ const AdminTasksPage = ({ currentUserId = null, user = null, setCurrentPage, set
                           <span>No tasks this week</span>
                         </div>
                       ) : (
-                        weekTasks.map((task) => (
-                          <div
-                            key={task.id}
-                            className={`admin-tasks-week-task-item ${task.assignedToId === CURRENT_USER_ID ? 'assigned-to-me' : ''}`}
-                            style={task.assignedToId === CURRENT_USER_ID ? { border: '2px solid #8b5cf6', backgroundColor: '#ffffff' } : {}}
-                          >
-                            <div className="admin-tasks-week-task-content">
-                              <div className="admin-tasks-week-task-info">
-                                <div className="admin-tasks-week-task-header">
-                                  <h4 className="admin-tasks-week-task-title">
-                                    {task.taskName}
-                                    {task.assignedToId === CURRENT_USER_ID && (
-                                      <span style={{
-                                        fontSize: '0.7rem',
+                        weekTasks.map((task) => {
+                          const rawGradeName = getGradeName(task.gradeId)
+                          const gNameLower = String(rawGradeName || '').toLowerCase()
+                          const gId = Number(task.gradeId)
+
+                          let theme = { bg: '#f1f5f9', text: '#475569', border: '#94a3b8', label: rawGradeName || 'General' }
+                          if (gNameLower.includes('junior') || gId === 1) {
+                            theme = { bg: '#e0e7ff', text: '#3730a3', border: '#6366f1', label: 'Junior' }
+                          } else if (gNameLower.includes('wheeler') || gId === 2) {
+                            theme = { bg: '#dcfce7', text: '#166534', border: '#22c55e', label: 'Wheeler' }
+                          } else if (gNameLower.includes('senior') || gId === 3) {
+                            theme = { bg: '#f3e8ff', text: '#6b21a8', border: '#a855f7', label: 'Senior' }
+                          } else if (gNameLower.includes('graduate') || gId === 5) {
+                            theme = { bg: '#e0f2fe', text: '#075985', border: '#0ea5e9', label: 'Graduate' }
+                          }
+
+                          const isAssignedToMe = task.assignedToId === CURRENT_USER_ID
+
+                          return (
+                            <div
+                              key={task.id}
+                              style={{
+                                backgroundColor: '#ffffff',
+                                borderRadius: '10px',
+                                padding: '14px 14px 10px 14px',
+                                marginBottom: '12px',
+                                border: '1px solid #e2e8f0',
+                                borderLeft: `4px solid ${isAssignedToMe ? '#8b5cf6' : theme.border}`,
+                                boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '8px',
+                                transition: 'all 0.2s ease-in-out'
+                              }}
+                            >
+                              {/* Top Bar: Full-Width Title + Compact Icon Actions */}
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                                <h4 style={{
+                                  fontSize: '13px',
+                                  fontWeight: '700',
+                                  color: '#1e293b',
+                                  lineHeight: '1.35',
+                                  margin: 0,
+                                  flex: 1
+                                }}>
+                                  {task.taskName}
+                                  {isAssignedToMe && (
+                                    <span style={{
+                                      fontSize: '0.65rem',
+                                      backgroundColor: '#8b5cf6',
+                                      color: 'white',
+                                      padding: '2px 6px',
+                                      borderRadius: '4px',
+                                      marginLeft: '6px',
+                                      verticalAlign: 'middle',
+                                      fontWeight: '600'
+                                    }}>
+                                      Assigned to You
+                                    </span>
+                                  )}
+                                </h4>
+
+                                {/* Action Buttons (Compact Icons) */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  {isAssignedToMe ? (
+                                    <button
+                                      onClick={() => {
+                                        if (setSelectedTask && setCurrentPage) {
+                                          setSelectedTask(task);
+                                          setCurrentPage("task-details");
+                                        }
+                                      }}
+                                      title="View Details"
+                                      style={{
+                                        padding: '4px 8px',
                                         backgroundColor: '#8b5cf6',
                                         color: 'white',
-                                        padding: '2px 6px',
-                                        borderRadius: '4px',
-                                        marginLeft: '8px',
-                                        verticalAlign: 'middle'
-                                      }}>
-                                        Assigned to You
-                                      </span>
-                                    )}
-                                  </h4>
-                                  <span className="admin-tasks-week-task-level">{getTaskAssignmentType(task)}</span>
+                                        border: 'none',
+                                        borderRadius: '6px',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '4px',
+                                        fontSize: '11px',
+                                        fontWeight: '600'
+                                      }}
+                                    >
+                                      <BookOpen size={13} />
+                                      <span>Details</span>
+                                    </button>
+                                  ) : (
+                                    <>
+                                      <button
+                                        onClick={() => handleEdit(task)}
+                                        title="Edit Task"
+                                        style={{
+                                          width: '28px',
+                                          height: '28px',
+                                          borderRadius: '6px',
+                                          border: '1px solid #dbeafe',
+                                          backgroundColor: '#eff6ff',
+                                          color: '#2563eb',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          cursor: 'pointer',
+                                          transition: 'all 0.15s ease'
+                                        }}
+                                      >
+                                        <Edit size={14} />
+                                      </button>
+                                      <button
+                                        onClick={() => handleDelete(task.id)}
+                                        title="Delete Task"
+                                        style={{
+                                          width: '28px',
+                                          height: '28px',
+                                          borderRadius: '6px',
+                                          border: '1px solid #fee2e2',
+                                          backgroundColor: '#fef2f2',
+                                          color: '#dc2626',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          cursor: 'pointer',
+                                          transition: 'all 0.15s ease'
+                                        }}
+                                      >
+                                        <Trash2 size={14} />
+                                      </button>
+                                    </>
+                                  )}
                                 </div>
+                              </div>
 
-                                <p className="admin-tasks-week-task-description">
-                                  {task.taskDescription.length > 100
-                                    ? `${task.taskDescription.substring(0, 100)}...`
+                              {/* Task Description */}
+                              {task.taskDescription && (
+                                <p style={{
+                                  fontSize: '11.5px',
+                                  color: '#64748b',
+                                  lineHeight: '1.4',
+                                  margin: 0
+                                }}>
+                                  {task.taskDescription.length > 95
+                                    ? `${task.taskDescription.substring(0, 95)}...`
                                     : task.taskDescription
                                   }
                                 </p>
+                              )}
 
-                                <div className="admin-tasks-week-task-meta">
-                                  <div className="admin-tasks-week-task-grade">
-                                    <BookOpen size={14} />
+                              {/* Card Meta Footer */}
+                              <div style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                marginTop: '4px',
+                                paddingTop: '8px',
+                                borderTop: '1px solid #f1f5f9'
+                              }}>
+                                {/* Grade & Assignment Badges */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                  <span style={{
+                                    backgroundColor: theme.bg,
+                                    color: theme.text,
+                                    fontSize: '10.5px',
+                                    fontWeight: '700',
+                                    padding: '2px 8px',
+                                    borderRadius: '6px'
+                                  }}>
                                     {task.assignedToId ? (
-                                      <span>
-                                        {(() => {
-                                          const lead = capstoneLeads.find(l => l.id === task.assignedToId);
-                                          return lead ? `Lead: ${lead.fullNameEn.split(' ')[0]}` : "Assigned to Lead";
-                                        })()}
-                                      </span>
-                                    ) : (
-                                      <span>{getGradeName(task.gradeId)}</span>
-                                    )}
-                                  </div>
-                                  <div className="admin-tasks-week-task-deadline">
-                                    <Calendar size={14} />
-                                    <span>{formatDate(getTaskDeadline(task))}</span>
-                                  </div>
+                                      (() => {
+                                        const lead = capstoneLeads.find(l => l.id === task.assignedToId);
+                                        return lead ? `Lead: ${lead.fullNameEn.split(' ')[0]}` : "Assigned to Lead";
+                                      })()
+                                    ) : theme.label}
+                                  </span>
+
+                                  <span style={{
+                                    backgroundColor: '#f8fafc',
+                                    color: '#64748b',
+                                    border: '1px solid #e2e8f0',
+                                    fontSize: '10px',
+                                    fontWeight: '600',
+                                    padding: '1px 6px',
+                                    borderRadius: '4px'
+                                  }}>
+                                    {getTaskAssignmentType(task)}
+                                  </span>
+                                </div>
+
+                                {/* Deadline Date */}
+                                <div style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  fontSize: '10.5px',
+                                  color: '#64748b',
+                                  fontWeight: '500'
+                                }}>
+                                  <Calendar size={12} style={{ color: '#94a3b8' }} />
+                                  <span>{formatDate(getTaskDeadline(task))}</span>
                                 </div>
                               </div>
-
-                              <div className="admin-tasks-week-task-actions">
-                                {task.assignedToId === CURRENT_USER_ID ? (
-                                  <button
-                                    onClick={() => {
-                                      if (setSelectedTask && setCurrentPage) {
-                                        setSelectedTask(task);
-                                        setCurrentPage("task-details");
-                                      } else {
-                                        console.error("Navigation props missing in AdminTasksPage");
-                                      }
-                                    }}
-                                    className="admin-tasks-action-btn edit-btn"
-                                    title="View Details"
-                                    style={{
-                                      padding: '4px 8px',
-                                      backgroundColor: '#8b5cf6',
-                                      color: 'white',
-                                      border: 'none',
-                                      borderRadius: '4px',
-                                      cursor: 'pointer',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      gap: '4px',
-                                      flex: 1,
-                                      justifyContent: 'center'
-                                    }}
-                                  >
-                                    <BookOpen size={16} />
-                                    <span>Details</span>
-                                  </button>
-                                ) : (
-                                  <>
-                                    <button
-                                      onClick={() => handleEdit(task)}
-                                      className="admin-tasks-task-action-btn admin-tasks-edit-btn"
-                                      title="Edit Task"
-                                    >
-                                      <Edit size={16} />
-                                      <span>Edit</span>
-                                    </button>
-                                    <button
-                                      onClick={() => handleDelete(task.id)}
-                                      className="admin-tasks-task-action-btn admin-tasks-delete-btn"
-                                      title="Delete Task"
-                                    >
-                                      <Trash2 size={16} />
-                                      <span>Delete</span>
-                                    </button>
-                                  </>
-                                )}
-                              </div>
                             </div>
-                          </div>
-                        ))
+                          )
+                        })
                       )}
                     </div>
                   </div>
