@@ -1,12 +1,173 @@
-import React, { useState, useEffect } from 'react';
-import { Users, ArrowLeft, ArrowRight, CheckCircle, AlertCircle, Plus, Trash2 } from 'lucide-react';
-import { API_BASE_URL } from '../../config/apiConfig.js';
+import React, { useState, useEffect, useMemo } from 'react';
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  MouseSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  useDraggable,
+  useDroppable
+} from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
+import {
+  Users,
+  Search,
+  X,
+  Plus,
+  Trash2,
+  AlertCircle,
+  CheckCircle,
+  RefreshCw,
+  Sparkles,
+  UserPlus
+} from 'lucide-react';
 import { isEngineer, isBoard } from '../../utils/roleUtils';
 import { showSuccess, showError, showWarning } from '../../utils/toast';
 import ConfirmationDialog from '../ConfirmationDialog/ConfirmationDialog';
 import { axiosInstance } from '../../utils/authService';
 import './StepPages.css';
 
+/* ── EngineerChip — Draggable engineer item ───────────────── */
+function EngineerChip({ engineer, inCard, assignedTo, onRemove, overlay, sourceId }) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: sourceId ?? `engineer-${engineer.id}`,
+    data: { engineer },
+    disabled: overlay,
+  });
+  const style = transform ? { transform: CSS.Translate.toString(transform) } : undefined;
+
+  const engName = engineer?.fullNameEn || engineer?.fullNameAr || engineer?.name || 'Engineer';
+
+  if (overlay) {
+    return (
+      <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-red-600 text-white text-xs font-bold shadow-xl cursor-grabbing pointer-events-none z-50">
+        <Users size={13} />
+        <span>{engName}</span>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...listeners}
+      {...attributes}
+      className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold border select-none cursor-grab active:cursor-grabbing transition-all ${
+        isDragging
+          ? 'opacity-20 scale-90'
+          : inCard
+          ? 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100 dark:bg-red-950/50 dark:text-red-300 dark:border-red-800'
+          : assignedTo
+          ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800'
+          : 'bg-white text-slate-700 border-slate-200 hover:border-red-400 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
+      }`}
+    >
+      <Users size={12} className="opacity-60" />
+      <span>{engName}</span>
+      {assignedTo && !inCard && (
+        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400">
+          {assignedTo}
+        </span>
+      )}
+      {inCard && onRemove && (
+        <button
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemove();
+          }}
+          className="w-4 h-4 flex items-center justify-center rounded hover:bg-red-200 dark:hover:bg-red-800 text-red-500 cursor-pointer ml-1"
+          title="Unassign Engineer"
+        >
+          <X size={10} />
+        </button>
+      )}
+    </div>
+  );
+}
+
+/* ── ClassCard — Droppable target card ───────────────────── */
+function ClassCard({ id, label, gradeName, engineers, onRemove }) {
+  const { setNodeRef, isOver } = useDroppable({ id: `class-${id}` });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`flex flex-col rounded-xl border min-h-[160px] transition-all overflow-hidden bg-white dark:bg-slate-900 ${
+        isOver
+          ? 'border-red-500 shadow-xl ring-2 ring-red-500/20 scale-[1.02]'
+          : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+      }`}
+    >
+      <div
+        className={`flex items-center justify-between px-4 py-3 border-b transition-all ${
+          isOver
+            ? 'bg-red-600 border-red-500 text-white'
+            : 'bg-slate-50 dark:bg-slate-900 border-slate-100 dark:border-slate-800'
+        }`}
+      >
+        <div className="flex items-center gap-2">
+          <Users size={14} className={isOver ? 'text-red-100' : 'text-red-500'} />
+          <div className="flex flex-col">
+            <span className={`text-xs font-extrabold ${isOver ? 'text-white' : 'text-slate-800 dark:text-slate-100'}`}>
+              {label}
+            </span>
+            {gradeName && (
+              <span className={`text-[10px] ${isOver ? 'text-red-100' : 'text-slate-400'}`}>
+                {gradeName}
+              </span>
+            )}
+          </div>
+        </div>
+        <span
+          className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+            isOver ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+          }`}
+        >
+          {engineers.length} {engineers.length === 1 ? 'Engineer' : 'Engineers'}
+        </span>
+      </div>
+      <div
+        className={`flex-1 p-3 transition-all flex flex-col ${
+          isOver ? 'bg-red-50/40 dark:bg-red-950/15' : 'bg-white dark:bg-slate-900/50'
+        }`}
+      >
+        {engineers.length > 0 ? (
+          <div className="flex flex-wrap gap-1.5">
+            {engineers.map((eng) => (
+              <EngineerChip
+                key={eng.id}
+                engineer={eng}
+                inCard
+                sourceId={`card-${id}-${eng.id}`}
+                onRemove={() => onRemove(eng.id)}
+              />
+            ))}
+          </div>
+        ) : (
+          <div
+            className={`flex-1 flex flex-col items-center justify-center rounded-lg border border-dashed min-h-[90px] ${
+              isOver ? 'border-red-400 bg-red-50/60' : 'border-slate-200 dark:border-slate-800'
+            }`}
+          >
+            <span
+              className={`text-[10px] font-semibold uppercase tracking-wide ${
+                isOver ? 'text-red-600 font-bold' : 'text-slate-400 dark:text-slate-600'
+              }`}
+            >
+              {isOver ? 'Drop to assign' : 'Drop engineers here'}
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── Main Component ────────────────────────────────────────── */
 const Step2AssignEngineers = ({ onNext, onPrev, currentStep, user }) => {
   // Check if user is Engineer - hide this page from engineers (allow Super Admin and Board)
   if (isEngineer(user) && !isBoard(user)) {
@@ -29,8 +190,13 @@ const Step2AssignEngineers = ({ onNext, onPrev, currentStep, user }) => {
   const [classes, setClasses] = useState([]);
   const [assignments, setAssignments] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  const [search, setSearch] = useState('');
+  const [activeEngineer, setActiveEngineer] = useState(null);
+
   const [selectedEngineer, setSelectedEngineer] = useState('');
   const [selectedClass, setSelectedClass] = useState('');
+
   const [confirmationDialog, setConfirmationDialog] = useState({
     isOpen: false,
     title: '',
@@ -39,6 +205,12 @@ const Step2AssignEngineers = ({ onNext, onPrev, currentStep, user }) => {
     type: 'warning'
   });
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(MouseSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 8 } })
+  );
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -46,51 +218,145 @@ const Step2AssignEngineers = ({ onNext, onPrev, currentStep, user }) => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      console.log('Step2AssignEngineers - Starting to fetch data...');
-      
       const [engineersRes, classesRes, assignmentsRes] = await Promise.all([
         axiosInstance.get(`/Account/ByRoleName/Engineer`),
         axiosInstance.get(`/Class`),
         axiosInstance.get(`/Teams/Assignments`)
       ]);
 
-      // Handle different response structures
-      const engineersData = Array.isArray(engineersRes.data) ? engineersRes.data : 
-                           (engineersRes.data?.$values ? engineersRes.data.$values : []);
-      const classesData = Array.isArray(classesRes.data) ? classesRes.data : 
-                         (classesRes.data?.$values ? classesRes.data.$values : []);
-      const assignmentsData = Array.isArray(assignmentsRes.data) ? assignmentsRes.data : 
-                             (assignmentsRes.data?.$values ? assignmentsRes.data.$values : []);
+      const engineersData = Array.isArray(engineersRes.data)
+        ? engineersRes.data
+        : engineersRes.data?.$values
+        ? engineersRes.data.$values
+        : [];
+      const classesData = Array.isArray(classesRes.data)
+        ? classesRes.data
+        : classesRes.data?.$values
+        ? classesRes.data.$values
+        : [];
+      const assignmentsData = Array.isArray(assignmentsRes.data)
+        ? assignmentsRes.data
+        : assignmentsRes.data?.$values
+        ? assignmentsRes.data.$values
+        : [];
 
-      console.log('Step2AssignEngineers - Engineers data:', engineersData);
-      console.log('Step2AssignEngineers - Classes data:', classesData);
-      console.log('Step2AssignEngineers - Assignments data:', assignmentsData);
-      console.log('Step2AssignEngineers - Engineers count:', engineersData.length);
-      console.log('Step2AssignEngineers - Classes count:', classesData.length);
-      console.log('Step2AssignEngineers - Assignments count:', assignmentsData.length);
+      // Normalize IDs
+      const normalizedEngineers = engineersData.map((e) => ({
+        ...e,
+        id: Number(e.id ?? e.Id),
+        fullNameEn: e.fullNameEn ?? e.FullNameEN ?? e.fullNameAr ?? 'Engineer',
+      }));
 
-      setEngineers(engineersData);
-      setClasses(classesData);
-      setAssignments(assignmentsData);
-      
+      const normalizedClasses = classesData.map((c) => ({
+        ...c,
+        id: Number(c.id ?? c.Id),
+        className: c.className ?? c.ClassName ?? `Class #${c.id}`,
+        gradeName: c.gradeName ?? c.GradeName ?? '',
+      }));
+
+      const normalizedAssignments = assignmentsData.map((a) => ({
+        ...a,
+        accountId: Number(a.accountId ?? a.AccountId),
+        assignedClassId: Number(a.assignedClassId ?? a.AssignedClassId),
+      }));
+
+      setEngineers(normalizedEngineers);
+      setClasses(normalizedClasses);
+      setAssignments(normalizedAssignments);
     } catch (error) {
-      console.error('Step2AssignEngineers - Error fetching data:', error);
+      console.error('Error fetching data:', error);
       showError(`Error loading data: ${error.response?.data?.error || error.message}`);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAssignEngineer = async () => {
+  // Map classId -> className
+  const classLabelMap = useMemo(() => {
+    const map = {};
+    classes.forEach((c) => {
+      map[c.id] = c.className;
+    });
+    return map;
+  }, [classes]);
+
+  // Map engineerId -> classId (first assigned class)
+  const engineerClassMap = useMemo(() => {
+    const map = {};
+    assignments.forEach((a) => {
+      if (a.accountId && a.assignedClassId) {
+        map[a.accountId] = a.assignedClassId;
+      }
+    });
+    return map;
+  }, [assignments]);
+
+  // Filtered engineers for search
+  const filteredEngineers = useMemo(() => {
+    if (!search.trim()) return engineers;
+    const q = search.toLowerCase();
+    return engineers.filter(
+      (e) =>
+        (e.fullNameEn || '').toLowerCase().includes(q) ||
+        (e.fullNameAr || '').toLowerCase().includes(q) ||
+        (e.email || '').toLowerCase().includes(q)
+    );
+  }, [engineers, search]);
+
+  const unassignedEngineers = useMemo(() => {
+    return filteredEngineers.filter((e) => !engineerClassMap[e.id]);
+  }, [filteredEngineers, engineerClassMap]);
+
+  const assignedEngineers = useMemo(() => {
+    return filteredEngineers.filter((e) => !!engineerClassMap[e.id]);
+  }, [filteredEngineers, engineerClassMap]);
+
+  /* ── Drag & Drop Handler ─────────────────────────────────── */
+  const handleDragEnd = async (e) => {
+    const { active, over } = e;
+    setActiveEngineer(null);
+    if (!over) return;
+
+    const engineer = active.data.current?.engineer;
+    const overIdStr = String(over.id);
+    if (!engineer || !overIdStr.startsWith('class-')) return;
+
+    const targetClassId = parseInt(overIdStr.replace('class-', ''), 10);
+    if (isNaN(targetClassId)) return;
+
+    const engId = Number(engineer.id);
+
+    // Check if already assigned to this exact class
+    if (engineerClassMap[engId] === targetClassId) {
+      showWarning(`${engineer.fullNameEn} is already assigned to this class`);
+      return;
+    }
+
+    try {
+      await axiosInstance.post(`/Account/AssignEngineerToClass`, {
+        AccountId: engId,
+        ClassId: targetClassId,
+      });
+
+      showSuccess(`Assigned ${engineer.fullNameEn} successfully!`);
+      fetchData();
+    } catch (error) {
+      console.error('Error assigning engineer:', error);
+      showError(`Failed to assign engineer: ${error.response?.data?.error || error.message}`);
+    }
+  };
+
+  /* ── Manual Dropdown Assign ──────────────────────────────── */
+  const handleManualAssign = async () => {
     if (!selectedEngineer || !selectedClass) {
       showWarning('Please select both engineer and class');
       return;
     }
 
     try {
-      const response = await axiosInstance.post(`/Account/AssignEngineerToClass`, {
-        AccountId: parseInt(selectedEngineer),
-        ClassId: parseInt(selectedClass)
+      await axiosInstance.post(`/Account/AssignEngineerToClass`, {
+        AccountId: parseInt(selectedEngineer, 10),
+        ClassId: parseInt(selectedClass, 10),
       });
 
       showSuccess('Engineer assigned to class successfully!');
@@ -99,58 +365,27 @@ const Step2AssignEngineers = ({ onNext, onPrev, currentStep, user }) => {
       fetchData();
     } catch (error) {
       console.error('Error assigning engineer:', error);
-      showError(`Error assigning engineer to class: ${error.response?.data?.error || error.message}`);
+      showError(`Error assigning engineer: ${error.response?.data?.error || error.message}`);
     }
   };
 
+  /* ── Remove Assignment ───────────────────────────────────── */
+  const handleRemoveAssignment = (accountId) => {
+    const engineer = engineers.find((e) => e.id === Number(accountId));
+    const name = engineer?.fullNameEn || 'this engineer';
 
-  const getClassName = (classId) => {
-    const normalizedClassId = Number(classId);
-    const assignment = assignments.find(a => Number(a.assignedClassId) === normalizedClassId);
-    if (assignment && assignment.className) {
-      return assignment.className;
-    }
-
-    const classObj = classes.find(c => Number(c.id) === normalizedClassId);
-    return classObj ? classObj.className : 'Unknown Class';
-  };
-
-  const getAccountName = (accountId) => {
-    const normalizedAccountId = Number(accountId);
-    const assignment = assignments.find(a => Number(a.accountId) === normalizedAccountId);
-    if (assignment && assignment.accountName) {
-      return assignment.accountName;
-    }
-
-    const engineer = engineers.find(e => Number(e.id) === normalizedAccountId);
-    if (engineer && engineer.fullNameEn) {
-      return engineer.fullNameEn;
-    }
-    return 'Unknown Account';
-  };
-
-  const getAccountRole = (accountId) => {
-    const normalizedAccountId = Number(accountId);
-    const assignment = assignments.find(a => Number(a.accountId) === normalizedAccountId);
-    if (assignment) {
-      return 'Engineer';
-    }
-    return 'Unknown';
-  };
-
-  const handleRemoveAssignment = async (accountId) => {
     setConfirmationDialog({
       isOpen: true,
       title: 'Remove Assignment',
-      message: 'Are you sure you want to remove this assignment? This action cannot be undone.',
+      message: `Are you sure you want to unassign ${name}?`,
       onConfirm: () => confirmRemoveAssignment(accountId),
-      type: 'danger'
+      type: 'danger',
     });
   };
 
   const confirmRemoveAssignment = async (accountId) => {
     try {
-      const response = await axiosInstance.delete(`/Account/RemoveAssignment/${accountId}`);
+      await axiosInstance.delete(`/Account/RemoveAssignment/${accountId}`);
       showSuccess('Assignment removed successfully!');
       fetchData();
     } catch (error) {
@@ -162,205 +397,206 @@ const Step2AssignEngineers = ({ onNext, onPrev, currentStep, user }) => {
         title: '',
         message: '',
         onConfirm: null,
-        type: 'warning'
+        type: 'warning',
       });
     }
   };
 
-  const createTestEngineers = async () => {
-    try {
-      setLoading(true);
-      const response = await axiosInstance.post(`/Account/CreateTestEngineers`);
-      showSuccess(response.data.message);
-      fetchData();
-    } catch (error) {
-      console.error('Error creating test engineers:', error);
-      showError(`Error creating test engineers: ${error.response?.data?.error || error.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const createTestClasses = async () => {
-    try {
-      setLoading(true);
-      const response = await axiosInstance.post(`/Class/CreateTestData`);
-      showSuccess(response.data.message);
-      fetchData();
-    } catch (error) {
-      console.error('Error creating test classes:', error);
-      showError(`Error creating test classes: ${error.response?.data?.error || error.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const isStepComplete = assignments.length > 0;
-
   return (
     <div className="step-page step2-assign-engineers">
+      {/* Step Header */}
       <div className="step-header">
         <div className="step-title">
-          <Users className="step-title-icon" />
+          <UserPlus className="step-title-icon" style={{ color: '#dc2626' }} />
           <div>
             <h2>Assign Engineers to Classes</h2>
-            <p>Assign engineers to specific classes using the ReviewerSupervisorExtension table</p>
+            <p>Drag and drop engineers into classes to set up supervision</p>
           </div>
         </div>
+        <button
+          onClick={fetchData}
+          disabled={loading}
+          className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold flex items-center gap-1.5 text-slate-600 dark:text-slate-300 transition-all cursor-pointer"
+          title="Refresh Data"
+        >
+          <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+          <span>Refresh</span>
+        </button>
       </div>
 
-      <div className="step-content step2-content">
-        <div className="assignment-forms step2-assignment-forms">
-          <div className="assignment-form step2-assignment-form">
-            <h3>Assign Engineer to Class</h3>
-            <div className="form-row step2-form-row">
-              <div className="form-group step2-form-group">
-                <label>Select Engineer:</label>
-                <select 
-                  value={selectedEngineer} 
-                  onChange={(e) => setSelectedEngineer(e.target.value)}
-                >
-                  <option value="">Choose an engineer...</option>
-                  {(() => {
-                    // Show only engineers not assigned to any class
-                    const assignedIds = new Set((assignments || []).map(a => Number(a.accountId || a.AccountId)));
-                    const unassignedEngineers = (engineers || []).filter(e => !assignedIds.has(Number(e.id || e.Id)));
-                    return unassignedEngineers.length > 0 ? (
-                      unassignedEngineers.map(engineer => (
-                        <option key={engineer.id} value={engineer.id}>
-                          {engineer.fullNameEn} - {engineer.email}
-                        </option>
-                      ))
-                    ) : (
-                      <option value="" disabled>All engineers are assigned</option>
-                    );
-                  })()}
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Select Class:</label>
-                <select 
-                  value={selectedClass} 
-                  onChange={(e) => setSelectedClass(e.target.value)}
-                >
-                  <option value="">Choose a class...</option>
-                  {classes.length > 0 ? (
-                    classes.map(cls => (
-                      <option key={cls.id} value={cls.id}>
-                        {cls.className} ({cls.gradeName})
-                      </option>
-                    ))
-                  ) : (
-                    <option value="" disabled>No classes available</option>
-                  )}
-                </select>
-              </div>
-              <button 
-                className="assign-button"
-                onClick={handleAssignEngineer}
-                disabled={!selectedEngineer || !selectedClass}
-              >
-                <Plus className="button-icon" />
-                Assign Engineer
-              </button>
-            </div>
+      <div className="step-content flex flex-col gap-6 mt-4">
+        {/* Quick Assign Dropdown Form (Backup) */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+              <Sparkles size={14} className="text-red-500" /> Quick Select Assignment
+            </span>
           </div>
-
+          <div className="flex flex-wrap items-center gap-3">
+            <select
+              value={selectedEngineer}
+              onChange={(e) => setSelectedEngineer(e.target.value)}
+              className="flex-1 min-w-[200px] px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-red-500/40"
+            >
+              <option value="">Select an engineer...</option>
+              {unassignedEngineers.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.fullNameEn} ({e.email})
+                </option>
+              ))}
+            </select>
+            <select
+              value={selectedClass}
+              onChange={(e) => setSelectedClass(e.target.value)}
+              className="flex-1 min-w-[200px] px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-red-500/40"
+            >
+              <option value="">Select a class...</option>
+              {classes.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.className} ({c.gradeName})
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={handleManualAssign}
+              disabled={!selectedEngineer || !selectedClass}
+              className="px-4 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+            >
+              <Plus size={14} /> Assign
+            </button>
+          </div>
         </div>
 
-        <div className="assignments-overview">
-          <div className="assignments-header">
-            <h3>Current Assignments</h3>
-            <div className="assignments-count">
-              <span className="count-badge">{assignments.length}</span>
-              <span>Engineer{assignments.length !== 1 ? 's' : ''} Assigned</span>
+        {/* Drag and Drop Board */}
+        <DndContext
+          sensors={sensors}
+          onDragStart={(e) => setActiveEngineer(e.active.data.current?.engineer)}
+          onDragEnd={handleDragEnd}
+        >
+          {/* Search & Engineer Roster */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm">
+            <div className="relative mb-4">
+              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search engineers by name or email…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-9 pr-4 py-2.5 text-sm rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 outline-none focus:ring-2 focus:ring-red-500/40 text-slate-800 dark:text-slate-200"
+              />
             </div>
+
+            {/* Unassigned Engineers */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  Unassigned Engineers ({unassignedEngineers.length})
+                </span>
+                <span className="text-[11px] text-slate-400">Drag chip to assign</span>
+              </div>
+              {unassignedEngineers.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {unassignedEngineers.map((eng) => (
+                    <EngineerChip key={eng.id} engineer={eng} sourceId={`search-${eng.id}`} />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-slate-400 italic py-1">
+                  {search ? 'No unassigned engineers match search.' : 'All engineers are assigned to classes!'}
+                </p>
+              )}
+            </div>
+
+            {/* Assigned Engineers Roster */}
+            {assignedEngineers.length > 0 && (
+              <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                    Assigned Engineers ({assignedEngineers.length})
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {assignedEngineers.map((eng) => (
+                    <EngineerChip
+                      key={eng.id}
+                      engineer={eng}
+                      assignedTo={classLabelMap[engineerClassMap[eng.id]]}
+                      sourceId={`search-${eng.id}`}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-          
-          {loading ? (
-            <div className="loading-state">
-              <div className="loading-spinner"></div>
-              <p>Loading assignments...</p>
+
+          {/* Class Cards Grid */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-extrabold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                <Users size={16} className="text-red-500" /> Classes ({classes.length})
+              </h3>
+              <span className="text-xs text-slate-500">
+                Total Assignments: <strong className="text-red-600">{assignments.length}</strong>
+              </span>
             </div>
-          ) : assignments.length > 0 ? (
-            <div className="assignments-grid">
-              {assignments.map(assignment => {
-                const engineer = engineers.find(e => Number(e.id) === Number(assignment.accountId));
-                const classInfo = classes.find(c => Number(c.id) === Number(assignment.assignedClassId));
-                
-                return (
-                  <div key={assignment.accountId} className="assignment-card enhanced">
-                    <div className="assignment-card-header">
-                      <div className="engineer-avatar">
-                        <Users className="avatar-icon" />
-                      </div>
-                      <div className="engineer-info">
-                        <h4 className="engineer-name">{getAccountName(assignment.accountId)}</h4>
-                        <span className="role-badge engineer">
-                          <Users className="role-icon" />
-                          Engineer
-                        </span>
-                      </div>
-                      <button 
-                        className="remove-button enhanced"
-                        onClick={() => handleRemoveAssignment(assignment.accountId)}
-                        title="Remove assignment"
-                      >
-                        <Trash2 className="remove-icon" />
-                      </button>
-                    </div>
-                    
-                    <div className="assignment-details">
-                      <div className="detail-itemo">
-                        <span className="detail-label">Assigned to:</span>
-                        <span className="detail-value">{getClassName(assignment.assignedClassId)} - {classInfo.gradeName || 'N/A'}</span>
-                      </div>
-                      
-                    
-                    
-                    </div>
-                    
-                    <div className="assignment-status">
-                      <div className="status-indicator active">
-                        <div className="status-dot"></div>
-                        <span>Active Assignment</span>
-                      </div>
-                      <div className="assignment-date">
-                        <span>Assigned: {new Date().toLocaleDateString()}</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="no-assignments enhanced">
-              <div className="no-assignments-icon">
-                <Users className="empty-icon" />
+
+            {loading ? (
+              <div className="flex flex-col items-center justify-center p-12 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl">
+                <div className="w-8 h-8 border-4 border-red-500 border-t-transparent rounded-full animate-spin mb-3"></div>
+                <p className="text-xs text-slate-500">Loading class assignments...</p>
               </div>
-              <h4>No Engineer Assignments</h4>
-              <p>No engineers have been assigned to classes yet. Use the form above to create your first assignment.</p>
-              <div className="no-assignments-tip">
-                <AlertCircle className="tip-icon" />
-                <span>Tip: Assign engineers to classes to enable team supervision</span>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {classes.map((cls) => {
+                  const assignedToThisClass = assignments
+                    .filter((a) => Number(a.assignedClassId) === Number(cls.id))
+                    .map((a) => {
+                      const eng = engineers.find((e) => Number(e.id) === Number(a.accountId));
+                      return (
+                        eng || {
+                          id: Number(a.accountId),
+                          fullNameEn: a.accountName || `Engineer #${a.accountId}`,
+                        }
+                      );
+                    });
+
+                  return (
+                    <ClassCard
+                      key={cls.id}
+                      id={cls.id}
+                      label={cls.className}
+                      gradeName={cls.gradeName}
+                      engineers={assignedToThisClass}
+                      onRemove={(engId) => handleRemoveAssignment(engId)}
+                    />
+                  );
+                })}
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+
+          {/* Drag Overlay */}
+          <DragOverlay>
+            {activeEngineer && <EngineerChip engineer={activeEngineer} overlay />}
+          </DragOverlay>
+        </DndContext>
       </div>
 
+      {/* Confirmation Dialog */}
       <ConfirmationDialog
         isOpen={confirmationDialog.isOpen}
         title={confirmationDialog.title}
         message={confirmationDialog.message}
         onConfirm={confirmationDialog.onConfirm}
-        onCancel={() => setConfirmationDialog({
-          isOpen: false,
-          title: '',
-          message: '',
-          onConfirm: null,
-          type: 'warning'
-        })}
+        onCancel={() =>
+          setConfirmationDialog({
+            isOpen: false,
+            title: '',
+            message: '',
+            onConfirm: null,
+            type: 'warning',
+          })
+        }
         confirmText="Remove"
         cancelText="Cancel"
         type={confirmationDialog.type}
