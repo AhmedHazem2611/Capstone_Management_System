@@ -58,15 +58,13 @@ function EngineerChip({ engineer, inCard, assignedTo, onRemove, overlay, sourceI
       className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold border select-none cursor-grab active:cursor-grabbing transition-all ${
         isDragging
           ? 'opacity-20 scale-90'
-          : inCard
-          ? 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
-          : assignedTo
-          ? 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
+          : (inCard || assignedTo)
+          ? 'bg-red-50 text-slate-800 border-red-200 hover:bg-red-100'
           : 'bg-white text-slate-700 border-slate-200 hover:border-red-400 hover:bg-red-50/30'
       }`}
     >
-      <Users size={12} className={assignedTo ? "text-red-600" : "opacity-60 text-slate-500"} />
-      <span className={assignedTo ? "text-red-700 font-bold" : "text-slate-800 font-semibold"}>{engName}</span>
+      <Users size={12} className={(inCard || assignedTo) ? "text-slate-400 opacity-70" : "opacity-60 text-slate-500"} />
+      <span className="text-slate-800 font-semibold">{engName}</span>
       {assignedTo && !inCard && (
         <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-red-100 text-red-700 border border-red-200">
           {assignedTo}
@@ -79,7 +77,7 @@ function EngineerChip({ engineer, inCard, assignedTo, onRemove, overlay, sourceI
             e.stopPropagation();
             onRemove();
           }}
-          className="w-4 h-4 flex items-center justify-center rounded hover:bg-red-200 text-red-600 cursor-pointer ml-1 transition-all"
+          className="w-4 h-4 flex items-center justify-center rounded hover:bg-red-200 text-red-500 cursor-pointer ml-1 transition-all"
           title="Unassign Engineer"
         >
           <X size={10} />
