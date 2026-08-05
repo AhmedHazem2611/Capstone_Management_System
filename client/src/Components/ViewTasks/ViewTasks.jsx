@@ -1272,17 +1272,18 @@ const ViewTasks = ({ teamIdFilter: initialTeamIdFilter = null, currentUserId = n
                       const doneCount = (stats.completed || 0) + (stats.submitted || 0)
                       const totalCount = Math.max(stats.total || 0, 1)
                       const pct = Math.round((doneCount / totalCount) * 100)
+                      const barColor = pct === 100 ? '#10b981' : pct > 0 ? '#ef4444' : '#cbd5e1'
                       return (
                         <div className="team-progress-container" style={{ margin: '16px 0', padding: '0 8px' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.85rem', color: '#4b5563', fontWeight: '600' }}>
                             <span>Overall Progress</span>
-                            <span>{doneCount} / {stats.total} Tasks ({pct}%)</span>
+                            <span style={{ color: barColor, fontWeight: '700' }}>{doneCount} / {stats.total} Tasks ({pct}%)</span>
                           </div>
                           <div style={{ width: '100%', height: '10px', backgroundColor: '#e5e7eb', borderRadius: '5px', overflow: 'hidden' }}>
                             <div style={{
                               width: `${pct}%`,
                               height: '100%',
-                              backgroundColor: '#10b981',
+                              backgroundColor: barColor,
                               transition: 'width 0.5s ease-in-out'
                             }}></div>
                           </div>
