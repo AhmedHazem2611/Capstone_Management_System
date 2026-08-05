@@ -61,14 +61,14 @@ function EngineerChip({ engineer, inCard, assignedTo, onRemove, overlay, sourceI
           : inCard
           ? 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
           : assignedTo
-          ? 'bg-amber-50 text-amber-800 border-amber-200'
+          ? 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
           : 'bg-white text-slate-700 border-slate-200 hover:border-red-400 hover:bg-red-50/30'
       }`}
     >
-      <Users size={12} className="opacity-60 text-slate-500" />
-      <span className="text-slate-800 font-semibold">{engName}</span>
+      <Users size={12} className={assignedTo ? "text-red-600" : "opacity-60 text-slate-500"} />
+      <span className={assignedTo ? "text-red-700 font-bold" : "text-slate-800 font-semibold"}>{engName}</span>
       {assignedTo && !inCard && (
-        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-800">
+        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-red-100 text-red-700 border border-red-200">
           {assignedTo}
         </span>
       )}
@@ -511,7 +511,7 @@ const Step2AssignEngineers = ({ onNext, onPrev, currentStep, user }) => {
             {assignedEngineers.length > 0 && (
               <div className="mt-4 pt-3 border-t border-slate-100">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-bold uppercase tracking-wider text-amber-700">
+                  <span className="text-xs font-bold uppercase tracking-wider text-red-700">
                     Assigned Engineers ({assignedEngineers.length})
                   </span>
                 </div>
