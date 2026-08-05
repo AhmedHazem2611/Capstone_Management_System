@@ -263,15 +263,6 @@ const MyProjectPage = ({ user }) => {
         </div>
 
         <div className="right-column">
-          <div className="card preview-card">
-            <h3 className="preview-title">Live Preview</h3>
-            <div className="preview-item"><span className="preview-label">Name (EN):</span><span className="preview-value">{form.nameEn || "—"}</span></div>
-            <div className="preview-item"><span className="preview-label">Name (AR):</span><span className="preview-value">{form.nameAr || "—"}</span></div>
-            
-            <div className="preview-item multiline"><span className="preview-label">Description:</span><p className="preview-paragraph">{form.description || "—"}</p></div>
-            <div className="preview-item multiline"><span className="preview-label">Additional:</span><p className="preview-paragraph">{form.additionalInformation || "—"}</p></div>
-          </div>
-
           <div className="card tips-card">
             <h3 className="tips-title">Tips</h3>
             <ul className="tips-list">
