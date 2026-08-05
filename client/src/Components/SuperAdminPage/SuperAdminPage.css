@@ -120,15 +120,6 @@
   border-bottom-color: #ef4444;
 }
 
-.step-mini.completed {
-  background: #f0fdf4;
-}
-
-.step-mini.completed.active {
-  background: white;
-  border-bottom-color: #10b981;
-}
-
 .step-mini-icon {
   width: 20px;
   height: 20px;
@@ -137,10 +128,6 @@
 
 .step-mini.active .step-mini-icon {
   color: #ef4444;
-}
-
-.step-mini.completed .step-mini-icon {
-  color: #10b981;
 }
 
 

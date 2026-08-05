@@ -104,7 +104,6 @@ const SuperAdminPage = ({ user }) => {
   }, [user]);
 
   const getStepStatus = (stepId) => {
-    if (stepId < currentStep) return "completed";
     if (stepId === currentStep) return "current";
     return "pending";
   };
