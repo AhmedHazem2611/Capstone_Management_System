@@ -59,16 +59,16 @@ function EngineerChip({ engineer, inCard, assignedTo, onRemove, overlay, sourceI
         isDragging
           ? 'opacity-20 scale-90'
           : inCard
-          ? 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100 dark:bg-red-950/50 dark:text-red-300 dark:border-red-800'
+          ? 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
           : assignedTo
-          ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800'
-          : 'bg-white text-slate-700 border-slate-200 hover:border-red-400 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
+          ? 'bg-amber-50 text-amber-800 border-amber-200'
+          : 'bg-white text-slate-700 border-slate-200 hover:border-red-400 hover:bg-red-50/30'
       }`}
     >
-      <Users size={12} className="opacity-60" />
-      <span>{engName}</span>
+      <Users size={12} className="opacity-60 text-slate-500" />
+      <span className="text-slate-800 font-semibold">{engName}</span>
       {assignedTo && !inCard && (
-        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400">
+        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-800">
           {assignedTo}
         </span>
       )}
@@ -79,7 +79,7 @@ function EngineerChip({ engineer, inCard, assignedTo, onRemove, overlay, sourceI
             e.stopPropagation();
             onRemove();
           }}
-          className="w-4 h-4 flex items-center justify-center rounded hover:bg-red-200 dark:hover:bg-red-800 text-red-500 cursor-pointer ml-1"
+          className="w-4 h-4 flex items-center justify-center rounded hover:bg-red-200 text-red-600 cursor-pointer ml-1 transition-all"
           title="Unassign Engineer"
         >
           <X size={10} />
@@ -96,27 +96,27 @@ function ClassCard({ id, label, gradeName, engineers, onRemove }) {
   return (
     <div
       ref={setNodeRef}
-      className={`flex flex-col rounded-xl border min-h-[160px] transition-all overflow-hidden bg-white dark:bg-slate-900 ${
+      className={`flex flex-col rounded-xl border min-h-[160px] transition-all overflow-hidden bg-white ${
         isOver
           ? 'border-red-500 shadow-xl ring-2 ring-red-500/20 scale-[1.02]'
-          : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+          : 'border-slate-200 hover:border-slate-300 shadow-sm'
       }`}
     >
       <div
         className={`flex items-center justify-between px-4 py-3 border-b transition-all ${
           isOver
             ? 'bg-red-600 border-red-500 text-white'
-            : 'bg-slate-50 dark:bg-slate-900 border-slate-100 dark:border-slate-800'
+            : 'bg-slate-50 border-slate-100 text-slate-800'
         }`}
       >
         <div className="flex items-center gap-2">
-          <Users size={14} className={isOver ? 'text-red-100' : 'text-red-500'} />
+          <Users size={14} className={isOver ? 'text-red-100' : 'text-red-600'} />
           <div className="flex flex-col">
-            <span className={`text-xs font-extrabold ${isOver ? 'text-white' : 'text-slate-800 dark:text-slate-100'}`}>
+            <span className={`text-xs font-extrabold ${isOver ? 'text-white' : 'text-slate-800'}`}>
               {label}
             </span>
             {gradeName && (
-              <span className={`text-[10px] ${isOver ? 'text-red-100' : 'text-slate-400'}`}>
+              <span className={`text-[10px] ${isOver ? 'text-red-100' : 'text-slate-500'}`}>
                 {gradeName}
               </span>
             )}
@@ -124,7 +124,7 @@ function ClassCard({ id, label, gradeName, engineers, onRemove }) {
         </div>
         <span
           className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-            isOver ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+            isOver ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700 border border-slate-200'
           }`}
         >
           {engineers.length} {engineers.length === 1 ? 'Engineer' : 'Engineers'}
@@ -132,7 +132,7 @@ function ClassCard({ id, label, gradeName, engineers, onRemove }) {
       </div>
       <div
         className={`flex-1 p-3 transition-all flex flex-col ${
-          isOver ? 'bg-red-50/40 dark:bg-red-950/15' : 'bg-white dark:bg-slate-900/50'
+          isOver ? 'bg-red-50/50' : 'bg-white'
         }`}
       >
         {engineers.length > 0 ? (
@@ -150,12 +150,12 @@ function ClassCard({ id, label, gradeName, engineers, onRemove }) {
         ) : (
           <div
             className={`flex-1 flex flex-col items-center justify-center rounded-lg border border-dashed min-h-[90px] ${
-              isOver ? 'border-red-400 bg-red-50/60' : 'border-slate-200 dark:border-slate-800'
+              isOver ? 'border-red-400 bg-red-50/60' : 'border-slate-200 bg-slate-50/50'
             }`}
           >
             <span
               className={`text-[10px] font-semibold uppercase tracking-wide ${
-                isOver ? 'text-red-600 font-bold' : 'text-slate-400 dark:text-slate-600'
+                isOver ? 'text-red-600 font-bold' : 'text-slate-400'
               }`}
             >
               {isOver ? 'Drop to assign' : 'Drop engineers here'}
@@ -172,13 +172,13 @@ const Step2AssignEngineers = ({ onNext, onPrev, currentStep, user }) => {
   // Check if user is Engineer - hide this page from engineers (allow Super Admin and Board)
   if (isEngineer(user) && !isBoard(user)) {
     return (
-      <div className="step-page">
+      <div className="step-page bg-white">
         <div className="step-header">
           <div className="step-title">
-            <Users className="step-title-icon" />
+            <Users className="step-title-icon text-red-600" />
             <div>
-              <h2>Access Denied</h2>
-              <p>This page is only accessible to Super Administrators and Board members.</p>
+              <h2 className="text-slate-800 font-bold">Access Denied</h2>
+              <p className="text-slate-500">This page is only accessible to Super Administrators and Board members.</p>
             </div>
           </div>
         </div>
@@ -403,40 +403,40 @@ const Step2AssignEngineers = ({ onNext, onPrev, currentStep, user }) => {
   };
 
   return (
-    <div className="step-page step2-assign-engineers">
+    <div className="step-page step2-assign-engineers bg-slate-50/50 p-4 rounded-2xl">
       {/* Step Header */}
-      <div className="step-header">
+      <div className="step-header bg-white border border-slate-200 rounded-xl p-4 shadow-sm mb-4">
         <div className="step-title">
-          <UserPlus className="step-title-icon" style={{ color: '#dc2626' }} />
+          <UserPlus className="step-title-icon text-red-600" />
           <div>
-            <h2>Assign Engineers to Classes</h2>
-            <p>Drag and drop engineers into classes to set up supervision</p>
+            <h2 className="text-slate-800 font-bold">Assign Engineers to Classes</h2>
+            <p className="text-slate-500">Drag and drop engineers into classes to set up supervision</p>
           </div>
         </div>
         <button
           onClick={fetchData}
           disabled={loading}
-          className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold flex items-center gap-1.5 text-slate-600 dark:text-slate-300 transition-all cursor-pointer"
+          className="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-xs font-semibold flex items-center gap-1.5 text-slate-700 transition-all cursor-pointer bg-white"
           title="Refresh Data"
         >
-          <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+          <RefreshCw size={13} className={loading ? 'animate-spin text-red-600' : 'text-slate-500'} />
           <span>Refresh</span>
         </button>
       </div>
 
-      <div className="step-content flex flex-col gap-6 mt-4">
+      <div className="step-content flex flex-col gap-6">
         {/* Quick Assign Dropdown Form (Backup) */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm">
+        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-              <Sparkles size={14} className="text-red-500" /> Quick Select Assignment
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+              <Sparkles size={14} className="text-red-600" /> Quick Select Assignment
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <select
               value={selectedEngineer}
               onChange={(e) => setSelectedEngineer(e.target.value)}
-              className="flex-1 min-w-[200px] px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-red-500/40"
+              className="flex-1 min-w-[200px] px-3 py-2 text-xs rounded-lg border border-slate-200 bg-slate-50 text-slate-800 outline-none focus:ring-2 focus:ring-red-500/40 focus:bg-white"
             >
               <option value="">Select an engineer...</option>
               {unassignedEngineers.map((e) => (
@@ -448,7 +448,7 @@ const Step2AssignEngineers = ({ onNext, onPrev, currentStep, user }) => {
             <select
               value={selectedClass}
               onChange={(e) => setSelectedClass(e.target.value)}
-              className="flex-1 min-w-[200px] px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-red-500/40"
+              className="flex-1 min-w-[200px] px-3 py-2 text-xs rounded-lg border border-slate-200 bg-slate-50 text-slate-800 outline-none focus:ring-2 focus:ring-red-500/40 focus:bg-white"
             >
               <option value="">Select a class...</option>
               {classes.map((c) => (
@@ -474,7 +474,7 @@ const Step2AssignEngineers = ({ onNext, onPrev, currentStep, user }) => {
           onDragEnd={handleDragEnd}
         >
           {/* Search & Engineer Roster */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm">
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
             <div className="relative mb-4">
               <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
@@ -482,14 +482,14 @@ const Step2AssignEngineers = ({ onNext, onPrev, currentStep, user }) => {
                 placeholder="Search engineers by name or email…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 text-sm rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 outline-none focus:ring-2 focus:ring-red-500/40 text-slate-800 dark:text-slate-200"
+                className="w-full pl-9 pr-4 py-2.5 text-sm rounded-lg border border-slate-200 bg-slate-50 outline-none focus:ring-2 focus:ring-red-500/40 text-slate-800 focus:bg-white"
               />
             </div>
 
             {/* Unassigned Engineers */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-600">
                   Unassigned Engineers ({unassignedEngineers.length})
                 </span>
                 <span className="text-[11px] text-slate-400">Drag chip to assign</span>
@@ -509,9 +509,9 @@ const Step2AssignEngineers = ({ onNext, onPrev, currentStep, user }) => {
 
             {/* Assigned Engineers Roster */}
             {assignedEngineers.length > 0 && (
-              <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <div className="mt-4 pt-3 border-t border-slate-100">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                  <span className="text-xs font-bold uppercase tracking-wider text-amber-700">
                     Assigned Engineers ({assignedEngineers.length})
                   </span>
                 </div>
@@ -532,17 +532,17 @@ const Step2AssignEngineers = ({ onNext, onPrev, currentStep, user }) => {
           {/* Class Cards Grid */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-extrabold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                <Users size={16} className="text-red-500" /> Classes ({classes.length})
+              <h3 className="text-sm font-extrabold text-slate-800 flex items-center gap-2">
+                <Users size={16} className="text-red-600" /> Classes ({classes.length})
               </h3>
               <span className="text-xs text-slate-500">
-                Total Assignments: <strong className="text-red-600">{assignments.length}</strong>
+                Total Assignments: <strong className="text-red-600 font-extrabold">{assignments.length}</strong>
               </span>
             </div>
 
             {loading ? (
-              <div className="flex flex-col items-center justify-center p-12 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl">
-                <div className="w-8 h-8 border-4 border-red-500 border-t-transparent rounded-full animate-spin mb-3"></div>
+              <div className="flex flex-col items-center justify-center p-12 bg-white border border-slate-200 rounded-xl">
+                <div className="w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full animate-spin mb-3"></div>
                 <p className="text-xs text-slate-500">Loading class assignments...</p>
               </div>
             ) : (
