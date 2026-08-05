@@ -8,7 +8,7 @@
  */
 
 import { useState, useEffect } from "react"
-import { Search, Users, Building, Grid, ChevronLeft, AlertTriangle, FileText, X, LayoutGrid, List } from "lucide-react"
+import { Search, Users, Building, Grid, ChevronLeft, AlertTriangle, FileText, X } from "lucide-react"
 import { useNotification } from "../../contexts/NotificationContext"
 import { API_BASE_URL } from '../../config/apiConfig.js';
 import { parseISO, format } from "date-fns"
@@ -29,7 +29,6 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
   const [loading, setLoading] = useState(true)
   const [selectedTeam, setSelectedTeam] = useState(null)
   const [viewMode, setViewMode] = useState("teams") // 'teams' or 'grid'
-  const [gridSubViewMode, setGridSubViewMode] = useState("matrix") // 'matrix' or 'table'
   const [searchTerm, setSearchTerm] = useState("")
   const [filterGrade, setFilterGrade] = useState("")
   const [filterClass, setFilterClass] = useState("")
@@ -427,8 +426,8 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
   // Always rely on server-side validation for security
 
   const getTaskStatus = (taskId, teamId) => {
-    const submission = submissions.find((s) => s.taskId === taskId && s.teamId === teamId)
-    const task = tasks.find((t) => t.id === taskId)
+    const submission = submissions.find((s) => Number(s.taskId) === Number(taskId) && Number(s.teamId) === Number(teamId))
+    const task = tasks.find((t) => Number(t.id) === Number(taskId))
 
     // Default status is "Pending" (like PhasesPage)
     let status = "not-completed-yet"
@@ -574,7 +573,7 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
   const handleOpenTaskDetails = (task) => {
     if (!selectedTeam) return
 
-    const submission = submissions.find((item) => item.taskId === task.id && item.teamId === selectedTeam.id)
+    const submission = submissions.find((item) => Number(item.taskId) === Number(task.id) && Number(item.teamId) === Number(selectedTeam.id))
 
     setSelectedTaskDetails({
       id: task.id,
@@ -933,317 +932,190 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
     )
   }
 
-  const getStatusTableBadge = (status) => {
-    switch (status) {
-      case "completed-on-time":
-        return { label: "Completed (On Time)", bg: "#ecfdf5", color: "#059669", borderColor: "#a7f3d0" }
-      case "completed-late":
-        return { label: "Completed Late", bg: "#f0fdf4", color: "#166534", borderColor: "#bbf7d0" }
-      case "completed-very-late":
-        return { label: "Completed Very Late", bg: "#fef2f2", color: "#dc2626", borderColor: "#fecaca" }
-      case "submitted":
-        return { label: "Submitted", bg: "#eff6ff", color: "#2563eb", borderColor: "#bfdbfe" }
-      case "submitted-late":
-        return { label: "Submitted Late", bg: "#fffbe6", color: "#d97706", borderColor: "#fef08a" }
-      case "submitted-very-late":
-        return { label: "Submitted Very Late", bg: "#fef2f2", color: "#dc2626", borderColor: "#fecaca" }
-      case "rejected":
-        return { label: "Rejected", bg: "#fef2f2", color: "#dc2626", borderColor: "#fecaca" }
-      case "deadline-passed":
-        return { label: "Deadline Passed", bg: "#fef2f2", color: "#dc2626", borderColor: "#fecaca" }
-      case "pending":
-      case "not-completed-yet":
-      default:
-        return { label: "Pending", bg: "#f8fafc", color: "#64748b", borderColor: "#e2e8f0" }
-    }
-  }
-
   const renderTaskGrid = () => {
     if (!selectedTeam) return null
 
     let teamTasks = []
-    
+
+    // For students, show all tasks assigned to them (like PhasesSection)
+    // For other roles, filter tasks by team criteria
     if (isStudent(user)) {
+      // Students should see all tasks assigned to them, not filtered by team
       teamTasks = tasks
       console.log(`TeamsProgress - Student: Showing all ${teamTasks.length} tasks assigned to student`)
     } else {
+      // For admins/engineers/reviewers, filter tasks for the selected team using getTasksForTeam
       teamTasks = getTasksForTeam(selectedTeam.id)
       console.log(`TeamsProgress - Admin/Engineer: Showing ${teamTasks.length} tasks filtered for selected team`)
     }
 
+    console.log("TeamsProgress - Selected Team:", selectedTeam);
+    console.log("TeamsProgress - All tasks:", tasks);
+    console.log("TeamsProgress - Tasks to show:", teamTasks);
+
+    // Debug: Log each task's assignment details
+    teamTasks.forEach((task, index) => {
+      console.log(`TeamsProgress - Task ${index + 1}:`, {
+        id: task.id,
+        name: task.name,
+        gradeId: task.gradeId,
+        classId: task.classId,
+        teamId: task.teamId,
+        assignmentType: getTaskAssignmentType(task)
+      });
+    });
+    // Get team members for this team
+    const currentTeamMembers = teamMembers.filter((member) => member.teamId === selectedTeam.id)
+
+    // Get all submissions for this team to see which tasks they have
+    const teamSubmissions = submissions.filter((sub) => sub.teamId === selectedTeam.id)
+    const teamTaskIds = [...new Set(teamSubmissions.map((sub) => sub.taskId))]
+
+    console.log("Selected Team:", selectedTeam)
+    console.log("All Tasks:", tasks)
+    console.log("Team Tasks (filtered for selected team):", teamTasks)
+    console.log("Team Members:", currentTeamMembers)
+    console.log("Team Submissions:", teamSubmissions)
+    console.log("Team Task IDs:", teamTaskIds)
+
     return (
       <div className="task-grid-view">
-        <div className="grid-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-            {!isStudent(user) && (
-              <button className="back-btn" onClick={() => setViewMode("teams")}>
-                <ChevronLeft size={20} />
-                Back to Teams
-              </button>
-            )}
-            <h2 style={{ margin: 0, fontSize: '1.4rem', color: '#1e293b', fontWeight: 700 }}>
-              Task Progress - {selectedTeam.name}
-            </h2>
-          </div>
-
-          {/* View Toggle Buttons preserving website style */}
-          <div className="grid-view-toggle-buttons" style={{ display: 'flex', background: '#f1f5f9', padding: '4px', borderRadius: '10px', border: '1px solid #cbd5e1' }}>
-            <button
-              type="button"
-              onClick={() => setGridSubViewMode("matrix")}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '8px 16px',
-                border: 'none',
-                borderRadius: '8px',
-                fontSize: '13px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                backgroundColor: gridSubViewMode === "matrix" ? "#dc2626" : "transparent",
-                color: gridSubViewMode === "matrix" ? "#ffffff" : "#64748b",
-                boxShadow: gridSubViewMode === "matrix" ? "0 2px 6px rgba(220, 38, 38, 0.3)" : "none",
-                transition: 'all 0.2s ease'
-              }}
-            >
-              <LayoutGrid size={16} /> Grid Matrix View
+        <div className="grid-header">
+          {/* Only show back button for non-student users */}
+          {!isStudent(user) && (
+            <button className="back-btn" onClick={() => setViewMode("teams")}>
+              <ChevronLeft size={20} />
+              Back to Teams
             </button>
-            <button
-              type="button"
-              onClick={() => setGridSubViewMode("table")}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '8px 16px',
-                border: 'none',
-                borderRadius: '8px',
-                fontSize: '13px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                backgroundColor: gridSubViewMode === "table" ? "#dc2626" : "transparent",
-                color: gridSubViewMode === "table" ? "#ffffff" : "#64748b",
-                boxShadow: gridSubViewMode === "table" ? "0 2px 6px rgba(220, 38, 38, 0.3)" : "none",
-                transition: 'all 0.2s ease'
-              }}
-            >
-              <List size={16} /> Table List View
-            </button>
+          )}
+          <h2>Task Status Grid - {selectedTeam.name}</h2>
+          <div className="legend">
+            <div className="legend-item">
+              <div className="status-box completed-on-time"></div>
+              <span>Completed (On Time)</span>
+            </div>
+            <div className="legend-item">
+              <div className="status-box completed-late"></div>
+              <span>Completed Late</span>
+            </div>
+            <div className="legend-item">
+              <div className="status-box completed-very-late"></div>
+              <span>Completed Very Late (3+ days)</span>
+            </div>
+            <div className="legend-item">
+              <div className="status-box submitted"></div>
+              <span>Submitted</span>
+            </div>
+            <div className="legend-item">
+              <div className="status-box submitted-late"></div>
+              <span>Submitted Late</span>
+            </div>
+            <div className="legend-item">
+              <div className="status-box submitted-very-late"></div>
+              <span>Submitted Very Late (3+ days)</span>
+            </div>
+            <div className="legend-item">
+              <div className="status-box deadline-passed"></div>
+              <span>Deadline Passed</span>
+            </div>
+            <div className="legend-item">
+              <div className="status-box not-completed-yet"></div>
+              <span>Pending</span>
+            </div>
+            <div className="legend-item">
+              <div className="status-box rejected"></div>
+              <span>Rejected</span>
+            </div>
           </div>
         </div>
 
-        {gridSubViewMode === "table" ? (
-          /* Option 3: Clean Table List View preserving website design */
-          <div className="teams-table-wrapper" style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 4px 14px rgba(0,0,0,0.05)', marginTop: '16px' }}>
-            {teamTasks.length === 0 ? (
-              <div className="no-tasks-message" style={{ padding: '40px', textAlign: 'center' }}>
-                <FileText size={48} style={{ color: '#94a3b8', marginBottom: '12px' }} />
-                <h3 style={{ margin: 0, color: '#334155' }}>No tasks for this team</h3>
+        <div className="task-grid">
+          {teamTasks.length === 0 ? (
+            <div className="no-tasks-message">
+              <div className="no-tasks-icon">
+                <FileText size={48} />
               </div>
-            ) : (
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '14px' }}>
-                <thead>
-                  <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0', color: '#475569', fontWeight: '700' }}>
-                    <th style={{ padding: '16px 20px' }}>Task Title</th>
-                    <th style={{ padding: '16px 20px' }}>Scope</th>
-                    <th style={{ padding: '16px 20px' }}>Deadline</th>
-                    <th style={{ padding: '16px 20px' }}>Status</th>
-                    <th style={{ padding: '16px 20px', textAlign: 'right' }}>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {teamTasks.map((task, idx) => {
-                    const status = getTaskStatus(task.id, selectedTeam.id)
-                    const statusInfo = getStatusTableBadge(status)
+              <h3>No tasks for this team</h3>
+              <p>There are currently no tasks assigned to this team.</p>
+            </div>
+          ) : (
+            /* Split tasks into chunks of 8 */
+            (() => {
+              const tasksPerRow = 8;
+              const taskChunks = [];
+              for (let i = 0; i < teamTasks.length; i += tasksPerRow) {
+                taskChunks.push(teamTasks.slice(i, i + tasksPerRow));
+              }
 
-                    return (
-                      <tr
+              return taskChunks.map((chunk, chunkIndex) => (
+                <div key={chunkIndex} className="grid-section">
+                  {/* Header row for this chunk */}
+                  <div className="grid-row header-row">
+                    {chunk.map((task) => (
+                      <div
                         key={task.id}
-                        style={{
-                          borderBottom: '1px solid #f1f5f9',
-                          backgroundColor: idx % 2 === 0 ? '#ffffff' : '#fcfcfd',
-                          transition: 'background-color 0.2s ease'
+                        className="grid-cell header-cell task-header"
+                        role="button"
+                        tabIndex={0}
+                        title="View task details"
+                        onClick={() => handleOpenTaskDetails(task)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault()
+                            handleOpenTaskDetails(task)
+                          }
                         }}
                       >
-                        <td style={{ padding: '16px 20px', fontWeight: '600', color: '#1e293b' }}>
-                          {task.name}
-                        </td>
-                        <td style={{ padding: '16px 20px' }}>
-                          <span className="task-assignment-type">{getTaskAssignmentType(task)}</span>
-                        </td>
-                        <td style={{ padding: '16px 20px', color: '#475569', fontWeight: '500' }}>
+                        <div className="task-name">{task.name}</div>
+                        <div className="task-assignment-type">{getTaskAssignmentType(task)}</div>
+                        <div className="task-deadline">
                           {task.deadline ? format(parseISO(task.deadline), "MMM dd, yyyy") : "No deadline"}
-                        </td>
-                        <td style={{ padding: '16px 20px' }}>
-                          <span style={{
-                            display: 'inline-block',
-                            padding: '4px 12px',
-                            borderRadius: '20px',
-                            fontSize: '12px',
-                            fontWeight: '700',
-                            backgroundColor: statusInfo.bg,
-                            color: statusInfo.color,
-                            border: `1px solid ${statusInfo.borderColor}`
-                          }}>
-                            {statusInfo.label}
-                          </span>
-                        </td>
-                        <td style={{ padding: '16px 20px', textAlign: 'right' }}>
-                          <button
-                            onClick={() => handleOpenTaskDetails(task)}
-                            style={{
-                              padding: '6px 14px',
-                              backgroundColor: '#eff6ff',
-                              color: '#2563eb',
-                              border: '1px solid #bfdbfe',
-                              borderRadius: '8px',
-                              fontWeight: '600',
-                              fontSize: '13px',
-                              cursor: 'pointer',
-                              transition: 'all 0.2s ease'
-                            }}
-                          >
-                            View Details
-                          </button>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            )}
-          </div>
-        ) : (
-          /* Original Matrix View preserving legend and style */
-          <>
-            <div className="legend" style={{ marginBottom: '20px' }}>
-              <div className="legend-item">
-                <div className="status-box completed-on-time"></div>
-                <span>Completed (On Time)</span>
-              </div>
-              <div className="legend-item">
-                <div className="status-box completed-late"></div>
-                <span>Completed Late</span>
-              </div>
-              <div className="legend-item">
-                <div className="status-box completed-very-late"></div>
-                <span>Completed Very Late (3+ days)</span>
-              </div>
-              <div className="legend-item">
-                <div className="status-box submitted"></div>
-                <span>Submitted</span>
-              </div>
-              <div className="legend-item">
-                <div className="status-box submitted-late"></div>
-                <span>Submitted Late</span>
-              </div>
-              <div className="legend-item">
-                <div className="status-box submitted-very-late"></div>
-                <span>Submitted Very Late (3+ days)</span>
-              </div>
-              <div className="legend-item">
-                <div className="status-box deadline-passed"></div>
-                <span>Deadline Passed</span>
-              </div>
-              <div className="legend-item">
-                <div className="status-box not-completed-yet"></div>
-                <span>Pending</span>
-              </div>
-              <div className="legend-item">
-                <div className="status-box rejected"></div>
-                <span>Rejected</span>
-              </div>
-            </div>
-
-            <div className="task-grid">
-              {teamTasks.length === 0 ? (
-                <div className="no-tasks-message">
-                  <div className="no-tasks-icon">
-                    <FileText size={48} />
+                          {(() => {
+                            const timeRemaining = getTimeRemaining(task.deadline)
+                            const isLate = task.isLate || timeRemaining === null
+                            if (isLate && !submissions.find(s => Number(s.taskId) === Number(task.id) && Number(s.teamId) === Number(selectedTeam.id))) {
+                              return <div className="deadline-warning">⚠️ Deadline Passed</div>
+                            } else if (timeRemaining) {
+                              return <div className="time-remaining">{timeRemaining}</div>
+                            }
+                            return null
+                          })()}
+                        </div>
+                      </div>
+                    ))}
+                    {/* Fill remaining cells if chunk has less than 8 tasks */}
+                    {chunk.length < tasksPerRow && Array.from({ length: tasksPerRow - chunk.length }, (_, i) => (
+                      <div key={`empty-${i}`} className="grid-cell header-cell task-header empty-cell">
+                        <div className="task-name">-</div>
+                        <div className="task-assignment-type">-</div>
+                        <div className="task-deadline">-</div>
+                      </div>
+                    ))}
                   </div>
-                  <h3>No tasks for this team</h3>
-                  <p>There are currently no tasks assigned to this team.</p>
+
+                  {/* Data row for this chunk */}
+                  <div className="grid-row data-row">
+                    {chunk.map((task) => {
+                      const status = getTaskStatus(task.id, selectedTeam.id)
+                      console.log(`Task ${task.id} status: ${status}`)
+                      return (
+                        <div key={task.id} className="grid-cell status-cell">
+                          {getStatusBox(status)}
+                        </div>
+                      )
+                    })}
+                    {/* Fill remaining cells if chunk has less than 8 tasks */}
+                    {chunk.length < tasksPerRow && Array.from({ length: tasksPerRow - chunk.length }, (_, i) => (
+                      <div key={`empty-status-${i}`} className="grid-cell status-cell empty-cell">
+                        <div className="status-box empty"></div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              ) : (
-                /* Split tasks into chunks of 8 */
-                (() => {
-                  const tasksPerRow = 8;
-                  const taskChunks = [];
-                  for (let i = 0; i < teamTasks.length; i += tasksPerRow) {
-                    taskChunks.push(teamTasks.slice(i, i + tasksPerRow));
-                  }
-
-                  return taskChunks.map((chunk, chunkIndex) => (
-                    <div key={chunkIndex} className="grid-section">
-                      {/* Header row for this chunk */}
-                      <div className="grid-row header-row">
-                        {chunk.map((task) => (
-                          <div
-                            key={task.id}
-                            className="grid-cell header-cell task-header"
-                            role="button"
-                            tabIndex={0}
-                            title="View task details"
-                            onClick={() => handleOpenTaskDetails(task)}
-                            onKeyDown={(event) => {
-                              if (event.key === "Enter" || event.key === " ") {
-                                event.preventDefault()
-                                handleOpenTaskDetails(task)
-                              }
-                            }}
-                          >
-                            <div className="task-name">{task.name}</div>
-                            <div className="task-assignment-type">{getTaskAssignmentType(task)}</div>
-                            <div className="task-deadline">
-                              {task.deadline ? format(parseISO(task.deadline), "MMM dd, yyyy") : "No deadline"}
-                              {(() => {
-                                const timeRemaining = getTimeRemaining(task.deadline)
-                                const isLate = task.isLate || timeRemaining === null
-                                if (isLate && !submissions.find(s => s.taskId === task.id && s.teamId === selectedTeam.id)) {
-                                  return <div className="deadline-warning">⚠️ Deadline Passed</div>
-                                } else if (timeRemaining) {
-                                  return <div className="time-remaining">{timeRemaining}</div>
-                                }
-                                return null
-                              })()}
-                            </div>
-                          </div>
-                        ))}
-                        {/* Fill remaining cells if chunk has less than 8 tasks */}
-                        {chunk.length < tasksPerRow && Array.from({ length: tasksPerRow - chunk.length }, (_, i) => (
-                          <div key={`empty-${i}`} className="grid-cell header-cell task-header empty-cell">
-                            <div className="task-name">-</div>
-                            <div className="task-assignment-type">-</div>
-                            <div className="task-deadline">-</div>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Data row for this chunk */}
-                      <div className="grid-row data-row">
-                        {chunk.map((task) => {
-                          const status = getTaskStatus(task.id, selectedTeam.id)
-                          return (
-                            <div key={task.id} className="grid-cell status-cell">
-                              {getStatusBox(status)}
-                            </div>
-                          )
-                        })}
-                        {/* Fill remaining cells if chunk has less than 8 tasks */}
-                        {chunk.length < tasksPerRow && Array.from({ length: tasksPerRow - chunk.length }, (_, i) => (
-                          <div key={`empty-status-${i}`} className="grid-cell status-cell empty-cell">
-                            <div className="status-box empty"></div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ));
-                })()
-              )}
-            </div>
-          </>
-        )}
+              ));
+            })()
+          )}
+        </div>
       </div>
     )
   }
