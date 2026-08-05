@@ -1261,15 +1261,8 @@ const AdminTasksPage = ({ currentUserId = null, user = null, setCurrentPage, set
                           )
                         }
 
-                        // 2. Collect all task IDs assigned to this week (matching grade filter if applied)
-                        const weekTasks = tasks.filter(t => {
-                          if (Number(t.weekId) !== Number(week.id)) return false
-                          if (filterGradeId) {
-                            const taskGradeId = t.gradeId != null ? Number(t.gradeId) : null
-                            return taskGradeId === filterGradeId
-                          }
-                          return true
-                        })
+                        // 2. Collect all task IDs assigned to this week
+                        const weekTasks = tasks.filter(t => Number(t.weekId) === Number(week.id))
                         const weekTaskIds = new Set(weekTasks.map(t => Number(t.id)))
 
                         // 3. Find distinct team IDs that completed or submitted any task for this week
@@ -1284,14 +1277,7 @@ const AdminTasksPage = ({ currentUserId = null, user = null, setCurrentPage, set
                               if (weekTaskIds.has(sTaskId)) return true
 
                               const matchingTask = tasks.find(t => Number(t.id) === sTaskId)
-                              if (matchingTask && Number(matchingTask.weekId) === Number(week.id)) {
-                                if (filterGradeId) {
-                                  const mGradeId = matchingTask.gradeId != null ? Number(matchingTask.gradeId) : null
-                                  return mGradeId === filterGradeId
-                                }
-                                return true
-                              }
-                              return false
+                              return matchingTask && Number(matchingTask.weekId) === Number(week.id)
                             })
                             .map(s => Number(s.teamId))
                         )
