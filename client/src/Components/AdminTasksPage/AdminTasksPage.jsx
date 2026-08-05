@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import { Plus, Edit, Trash2, Calendar, BookOpen, Loader2, X, Check } from "lucide-react"
+import { Plus, Edit, Trash2, Calendar, BookOpen, Loader2, X, Check, Search } from "lucide-react"
 import { useNotification } from "../../contexts/NotificationContext"
 import { API_BASE_URL, isDevelopment } from '../../config/apiConfig.js';
 import { axiosInstance } from '../../utils/authService';
@@ -38,7 +38,12 @@ const AdminTasksPage = ({ currentUserId = null, user = null, setCurrentPage, set
   const [editingTask, setEditingTask] = useState(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [taskToDelete, setTaskToDelete] = useState(null)
-  const [selectedGradeFilter, setSelectedGradeFilter] = useState("") // Grade filter for super admin
+
+  // Filter States matching Teams Overview
+  const [searchTerm, setSearchTerm] = useState("")
+  const [selectedGradeFilter, setSelectedGradeFilter] = useState("") 
+  const [selectedClassFilter, setSelectedClassFilter] = useState("")
+  const [selectedEngineerFilter, setSelectedEngineerFilter] = useState("")
   const { showSuccess, showError, showWarning } = useNotification()
 
   // User configuration - fallback to default values if not provided
@@ -413,38 +418,79 @@ const AdminTasksPage = ({ currentUserId = null, user = null, setCurrentPage, set
     return availableTeams
   }
 
-  // ✅ Get filtered tasks for engineers, reviewers, and super admins
+  // ✅ Get filtered tasks for engineers, reviewers, super admins, capstone leads
   const getFilteredTasks = () => {
-    if (isDevelopment() === 'development') {
-      console.log("AdminTasksPage - getFilteredTasks called");
-    }
-
     let filteredTasks = tasks
 
     // For engineers and reviewers, only show tasks from assigned grades
     if (isEngineer(user) || isReviewer(user)) {
       const assignedGradeIds = assignedClasses.map(ac => ac.gradeId).filter(Boolean)
-
       filteredTasks = tasks.filter(task => {
         const taskGradeId = task.gradeId
-        const isInAssignedGrade = taskGradeId && assignedGradeIds.includes(taskGradeId)
-
-        return isInAssignedGrade
+        return taskGradeId && assignedGradeIds.includes(taskGradeId)
       })
     }
 
-    // For super admins, capstone leads, and board, apply grade filter if selected
-    if ((isSuperAdmin(user) || isBoard(user) || isCapstoneLead(user)) && selectedGradeFilter) {
+    // 1. Grade filter
+    if (selectedGradeFilter) {
       filteredTasks = filteredTasks.filter(task => {
         const taskGradeId = task.gradeId
-        const matchesGradeFilter = taskGradeId && Number(taskGradeId) === Number(selectedGradeFilter)
+        return taskGradeId && Number(taskGradeId) === Number(selectedGradeFilter)
+      })
+    }
 
-        return matchesGradeFilter
+    // 2. Class filter
+    if (selectedClassFilter) {
+      filteredTasks = filteredTasks.filter(task => {
+        const taskClassId = task.classId
+        if (taskClassId && Number(taskClassId) === Number(selectedClassFilter)) return true
+        if (task.teamId) {
+          const teamObj = teams.find(t => Number(t.id) === Number(task.teamId))
+          if (teamObj && Number(teamObj.classId) === Number(selectedClassFilter)) return true
+        }
+        return false
+      })
+    }
+
+    // 3. Engineer filter
+    if (selectedEngineerFilter) {
+      if (selectedEngineerFilter === "Unassigned") {
+        const unassignedTeamIds = new Set(
+          teams.filter(t => !t.supervisorAccountId && !t.supervisorName && (!t.engineers || t.engineers.length === 0)).map(t => Number(t.id))
+        )
+        filteredTasks = filteredTasks.filter(task => {
+          return task.teamId && unassignedTeamIds.has(Number(task.teamId))
+        })
+      } else {
+        const engNameLower = selectedEngineerFilter.toLowerCase()
+        const matchingTeamIds = new Set(
+          teams.filter(t => {
+            const supName = (t.supervisorName || t.SupervisorName || "").toLowerCase()
+            const engList = (t.engineers || []).map(e => e.toLowerCase())
+            return supName.includes(engNameLower) || engList.some(e => e.includes(engNameLower))
+          }).map(t => Number(t.id))
+        )
+        filteredTasks = filteredTasks.filter(task => {
+          if (task.teamId && matchingTeamIds.has(Number(task.teamId))) return true
+          return false
+        })
+      }
+    }
+
+    // 4. Search term
+    if (searchTerm.trim() !== "") {
+      const term = searchTerm.toLowerCase().trim()
+      filteredTasks = filteredTasks.filter(task => {
+        const nameMatch = (task.taskName || "").toLowerCase().includes(term)
+        const descMatch = (task.taskDescription || "").toLowerCase().includes(term)
+        const gradeMatch = (task.gradeName || "").toLowerCase().includes(term)
+        const classMatch = (task.className || "").toLowerCase().includes(term)
+        const teamMatch = (task.teamName || "").toLowerCase().includes(term)
+        return nameMatch || descMatch || gradeMatch || classMatch || teamMatch
       })
     }
 
     // USER REQUEST: Don't show "Assigned to You" tasks in this view
-    // Filter out tasks that are explicitly assigned to the current user
     filteredTasks = filteredTasks.filter(task => {
       return !task.assignedToId || String(task.assignedToId) !== String(CURRENT_USER_ID)
     })
@@ -456,14 +502,9 @@ const AdminTasksPage = ({ currentUserId = null, user = null, setCurrentPage, set
     ])
 
     filteredTasks = filteredTasks.filter(task => {
-      // Filter out tasks assigned explicitly to staff members
       if (task.assignedToId && staffIds.has(String(task.assignedToId))) return false;
-
-      // Filter out generic staff tasks (no grade, no team, no class, no assignee)
-      // These are meant for Capstone Leads or Engineers in their respective pages.
       const isGenericStaffTask = !task.gradeId && !task.teamId && !task.classId && !task.assignedToId;
       if (isGenericStaffTask) return false;
-
       return true;
     })
 
@@ -867,33 +908,12 @@ const AdminTasksPage = ({ currentUserId = null, user = null, setCurrentPage, set
           <h1 className="admin-tasks-title">Task Management</h1>
           <p className="admin-tasks-subtitle">
             {(isEngineer(user) || isReviewer(user))
-              ? "Create and manage tasks for your assigned classes Grades"
-              : (isSuperAdmin(user) || isBoard(user) || isCapstoneLead(user))
-                ? "Create and manage tasks for all grades. Use the filter above to view specific grades."
-                : "Create and manage tasks for all grades"
+              ? "Create and manage tasks for your assigned classes"
+              : "Create and manage tasks for all grades, classes, and teams"
             }
           </p>
         </div>
         <div className="admin-tasks-header-buttons">
-          {/* Grade Filter for Super Admin and Capstone Lead */}
-          {(isSuperAdmin(user) || isBoard(user) || isCapstoneLead(user)) && (
-            <div className="admin-tasks-grade-filter">
-              <label className="admin-tasks-filter-label">Filter by Grade:</label>
-              <select
-                className="admin-tasks-filter-select"
-                value={selectedGradeFilter}
-                onChange={(e) => setSelectedGradeFilter(e.target.value)}
-              >
-                <option value="">All Grades</option>
-                {grades.map((grade) => (
-                  <option key={grade.id} value={grade.id}>
-                    {grade.gradeName}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
           {!isBoard(user) && (
             <button
               className="admin-tasks-add-task-button"
@@ -907,6 +927,104 @@ const AdminTasksPage = ({ currentUserId = null, user = null, setCurrentPage, set
             </button>
           )}
         </div>
+      </div>
+
+      {/* Filters Toolbar - Matching Teams Overview */}
+      <div className="admin-tasks-filters-bar" style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center', marginBottom: '24px', padding: '16px', background: 'white', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: '1px solid #e2e8f0' }}>
+        {/* Search Input */}
+        <div style={{ position: 'relative', flex: '1', minWidth: '220px' }}>
+          <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+          <input
+            type="text"
+            placeholder="Search tasks, teams, classes, or grades..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{ width: '100%', paddingLeft: '38px', paddingRight: searchTerm ? '32px' : '12px', paddingTop: '8px', paddingBottom: '8px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '14px', outline: 'none' }}
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm("")}
+              style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+            >
+              <X size={16} />
+            </button>
+          )}
+        </div>
+
+        {/* Grade Filter */}
+        <select
+          value={selectedGradeFilter}
+          onChange={(e) => {
+            setSelectedGradeFilter(e.target.value)
+            setSelectedClassFilter("")
+          }}
+          style={{ padding: '8px 14px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '14px', background: 'white', color: '#1e293b', minWidth: '150px' }}
+        >
+          <option value="">All Grades</option>
+          {grades.map((grade) => (
+            <option key={grade.id || grade.Id} value={grade.id || grade.Id}>
+              {grade.gradeName || grade.GradeName}
+            </option>
+          ))}
+        </select>
+
+        {/* Class Filter (Cascading) */}
+        <select
+          value={selectedClassFilter}
+          onChange={(e) => setSelectedClassFilter(e.target.value)}
+          style={{ padding: '8px 14px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '14px', background: 'white', color: '#1e293b', minWidth: '150px' }}
+        >
+          <option value="">All Classes</option>
+          {(() => {
+            let classList = classes
+            if (selectedGradeFilter) {
+              classList = classes.filter(c => Number(c.gradeId || c.GradeId) === Number(selectedGradeFilter))
+            }
+            return classList.map((cls) => (
+              <option key={cls.id || cls.Id} value={cls.id || cls.Id}>
+                {cls.className || cls.ClassName}
+              </option>
+            ))
+          })()}
+        </select>
+
+        {/* Engineer Filter */}
+        {!isEngineer(user) && (
+          <select
+            value={selectedEngineerFilter}
+            onChange={(e) => setSelectedEngineerFilter(e.target.value)}
+            style={{ padding: '8px 14px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '14px', background: 'white', color: '#1e293b', minWidth: '160px' }}
+          >
+            <option value="">All Engineers</option>
+            <option value="Unassigned">Unassigned</option>
+            {Array.from(
+              new Set(
+                teams
+                  .flatMap(t => [t.supervisorName, t.SupervisorName, ...(t.engineers || [])])
+                  .filter(Boolean)
+              )
+            ).map((engName, idx) => (
+              <option key={`eng-${idx}`} value={engName}>
+                {engName}
+              </option>
+            ))}
+          </select>
+        )}
+
+        {/* Clear Filters Button */}
+        {(searchTerm || selectedGradeFilter || selectedClassFilter || selectedEngineerFilter) && (
+          <button
+            onClick={() => {
+              setSearchTerm("")
+              setSelectedGradeFilter("")
+              setSelectedClassFilter("")
+              setSelectedEngineerFilter("")
+            }}
+            style={{ padding: '8px 14px', backgroundColor: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}
+          >
+            <X size={14} /> Clear Filters
+          </button>
+        )}
       </div>
 
       {/* Add/Edit Task Form */}
@@ -1244,12 +1362,34 @@ const AdminTasksPage = ({ currentUserId = null, user = null, setCurrentPage, set
 
                       {/* Weekly Team Completion Progress Bar */}
                       {(() => {
-                        // 1. Filter teams based on selectedGradeFilter (selectedGradeFilter is Grade ID like "1", "2", "3")
-                        const filterGradeId = selectedGradeFilter ? Number(selectedGradeFilter) : null
+                        // 1. Filter teams based on all active filters
                         const relevantTeams = teams.filter(team => {
-                          if (!filterGradeId) return true
-                          const teamGradeId = team.gradeId != null ? Number(team.gradeId) : null
-                          return teamGradeId === filterGradeId
+                          if (selectedGradeFilter) {
+                            const teamGradeId = team.gradeId != null ? Number(team.gradeId) : null
+                            if (teamGradeId !== Number(selectedGradeFilter)) return false
+                          }
+                          if (selectedClassFilter) {
+                            const teamClassId = team.classId != null ? Number(team.classId) : null
+                            if (teamClassId !== Number(selectedClassFilter)) return false
+                          }
+                          if (selectedEngineerFilter) {
+                            if (selectedEngineerFilter === "Unassigned") {
+                              if (team.supervisorAccountId || team.supervisorName || (team.engineers && team.engineers.length > 0)) return false
+                            } else {
+                              const engNameLower = selectedEngineerFilter.toLowerCase()
+                              const supName = (team.supervisorName || team.SupervisorName || "").toLowerCase()
+                              const engList = (team.engineers || []).map(e => e.toLowerCase())
+                              if (!supName.includes(engNameLower) && !engList.some(e => e.includes(engNameLower))) return false
+                            }
+                          }
+                          if (searchTerm.trim() !== "") {
+                            const term = searchTerm.toLowerCase().trim()
+                            const nameMatch = (team.teamName || "").toLowerCase().includes(term)
+                            const classMatch = (team.className || "").toLowerCase().includes(term)
+                            const gradeMatch = (team.gradeName || "").toLowerCase().includes(term)
+                            if (!nameMatch && !classMatch && !gradeMatch) return false
+                          }
+                          return true
                         })
 
                         if (relevantTeams.length === 0) {
