@@ -76,7 +76,7 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
       const teamsRaw = teamsRes.data
       console.log("TeamsProgress - Raw teams response:", teamsRaw)
       console.log("TeamsProgress - Teams response type:", typeof teamsRaw, "Is array:", Array.isArray(teamsRaw))
-
+      
       // Safely extract teams array with better error handling (same as ViewTasks)
       let teamsList = []
       try {
@@ -85,7 +85,7 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
         } else if (teamsRaw && typeof teamsRaw === 'object') {
           // Try different possible property names
           teamsList = teamsRaw.$values || teamsRaw.data || teamsRaw.teams || teamsRaw.results || teamsRaw.items || []
-
+          
           // If still not an array, try to convert object to array
           if (!Array.isArray(teamsList) && teamsRaw && typeof teamsRaw === 'object') {
             // Check if it's an object with numeric keys
@@ -99,10 +99,10 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
         console.error("Error extracting teams list:", error)
         teamsList = []
       }
-
+      
       console.log("TeamsProgress - Extracted teams list:", teamsList)
       console.log("TeamsProgress - Teams list type:", typeof teamsList, "Is array:", Array.isArray(teamsList))
-
+      
       // Ensure teamsList is an array before proceeding
       if (!Array.isArray(teamsList)) {
         console.error("Teams list is not an array, defaulting to empty array")
@@ -218,7 +218,7 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
         statusId: task.statusId || task.StatusId,
         adminAccountId: task.adminAccountId || task.AdminAccountId,
       }))
-
+      
       console.log(`TeamsProgress - Tasks loaded: ${processedTasks.length}`)
 
       // Process submissions
@@ -374,17 +374,17 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
 
   const getTeamStats = (team) => {
     if (!team) return { done: 0, total: 0 }
-
+    
     const teamTasks = getTasksForTeam(team.id)
     const teamSubmissions = submissions.filter(s => Number(s.teamId) === Number(team.id))
-
+    
     // Count submitted + completed tasks
     const submittedCount = teamSubmissions.filter(s => {
       const sId = Number(s.statusId)
       return sId === STATUS_CONSTANTS.TASK_SUBMITTED_ON_TIME ||
-        sId === STATUS_CONSTANTS.TASK_SUBMITTED_LATE ||
-        sId === STATUS_CONSTANTS.TASK_COMPLETED ||
-        sId === STATUS_CONSTANTS.TASK_COMPLETED_LATE
+             sId === STATUS_CONSTANTS.TASK_SUBMITTED_LATE ||
+             sId === STATUS_CONSTANTS.TASK_COMPLETED ||
+             sId === STATUS_CONSTANTS.TASK_COMPLETED_LATE
     }).length
 
     const total = Math.max(teamTasks.length, submittedCount)
@@ -398,19 +398,19 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
   // Function to get time remaining until deadline (similar to PhasesSection)
   const getTimeRemaining = (deadlineString) => {
     if (!deadlineString) return null
-
+    
     try {
       const utcDate = parseISO(deadlineString)
       const cairoDeadline = new Date(utcDate.toLocaleString("en-US", { timeZone: "Africa/Cairo" }))
       const now = new Date()
       const diff = cairoDeadline - now
-
+      
       if (diff <= 0) return null // Deadline has passed
-
+      
       const days = Math.floor(diff / (1000 * 60 * 60 * 24))
       const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
       const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-
+      
       if (days > 0) return `${days} day${days > 1 ? 's' : ''} remaining`
       if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} remaining`
       if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} remaining`
@@ -436,7 +436,7 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
     if (submission) {
       // Use server isLate for submitted tasks only
       const effectiveIsLate = task?.isLate || false
-
+      
       // Check if submission is more than 3 days late
       let isVeryLate = false
       if (task?.deadline && submission.createdAt) {
@@ -444,7 +444,7 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
         const submissionDate = new Date(submission.createdAt)
         const daysLate = Math.ceil((submissionDate - deadlineDate) / (1000 * 60 * 60 * 24))
         isVeryLate = daysLate > 3
-
+        
         // Debug logging
         console.log(`Task ${taskId} deadline calculation:`, {
           deadline: task.deadline,
@@ -455,9 +455,9 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
           isVeryLate: isVeryLate
         })
       }
-
+      
       status = StatusHelpers.getStatusText(submission.statusId, task?.deadline, false, effectiveIsLate, submission.createdAt)
-
+      
       // Convert StatusHelpers text to our internal status format
       switch (status) {
         case "Completed":
@@ -491,7 +491,7 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
       const timeRemaining = getTimeRemaining(task?.deadline)
       const isClientLate = timeRemaining === null // If timeRemaining is null, deadline has passed
       const effectiveIsLate = task?.isLate || isClientLate // Use server value or client fallback
-
+      
       if (effectiveIsLate) {
         status = "deadline-passed" // Red for deadline passed without submission
       } else {
@@ -506,36 +506,45 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
     return status
   }
 
-  const getStatusBadge = (status) => {
+  const getStatusBox = (status) => {
+    const statusLabels = {
+      "completed-on-time": "Completed",
+      "completed-late": "Completed Late",
+      "completed-very-late": "Completed Very Late",
+      submitted: "Submitted",
+      "submitted-late": "Submitted Late",
+      "submitted-very-late": "Submitted Very Late",
+      rejected: "Rejected",
+      "deadline-passed": "Deadline Passed",
+      pending: "Pending",
+      "not-completed-yet": "Not Completed Yet",
+    }
+
+    const label = statusLabels[status] || "Unknown Status"
+
     switch (status) {
       case "completed-on-time":
-        return <span className="task-badge badge-completed">Completed</span>
+        return <div className="status-box completed-on-time" title="Completed on time"><span className="status-box-label">{label}</span></div>
       case "completed-late":
+        return <div className="status-box completed-late" title="Completed late"><span className="status-box-label">{label}</span></div>
       case "completed-very-late":
-        return (
-          <div className="task-badge-group">
-            <span className="task-badge badge-completed">Completed</span>
-            <span className="task-badge badge-late">Late</span>
-          </div>
-        )
+        return <div className="status-box completed-very-late" title="Completed very late (3+ days)"><span className="status-box-label">{label}</span></div>
       case "submitted":
-        return <span className="task-badge badge-submitted">Submitted</span>
+        return <div className="status-box submitted" title="Submitted"><span className="status-box-label">{label}</span></div>
       case "submitted-late":
+        return <div className="status-box submitted-late" title="Submitted late"><span className="status-box-label">{label}</span></div>
       case "submitted-very-late":
-        return (
-          <div className="task-badge-group">
-            <span className="task-badge badge-submitted">Submitted</span>
-            <span className="task-badge badge-late">Late</span>
-          </div>
-        )
+        return <div className="status-box submitted-very-late" title="Submitted very late (3+ days)"><span className="status-box-label">{label}</span></div>
       case "rejected":
-        return <span className="task-badge badge-rejected">Rejected</span>
+        return <div className="status-box rejected" title="Rejected"><span className="status-box-label">{label}</span></div>
       case "deadline-passed":
-        return <span className="task-badge badge-overdue">Deadline Passed</span>
+        return <div className="status-box deadline-passed" title="Deadline passed"><span className="status-box-label">{label}</span></div>
       case "pending":
+        return <div className="status-box pending" title="Pending"><span className="status-box-label">{label}</span></div>
       case "not-completed-yet":
+        return <div className="status-box not-completed-yet" title="Not completed yet"><span className="status-box-label">{label}</span></div>
       default:
-        return <span className="task-badge badge-pending">Pending</span>
+        return <div className="status-box not-completed-yet" title="Unknown status"><span className="status-box-label">{label}</span></div>
     }
   }
 
@@ -544,8 +553,9 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
 
     try {
       return format(parseISO(dateString), "MMM dd, yyyy hh:mm a")
-    } catch (e) {
-      return dateString
+    } catch (error) {
+      console.error("Failed to format task date:", error)
+      return "Invalid date"
     }
   }
 
@@ -563,17 +573,17 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
   const handleOpenTaskDetails = (task) => {
     if (!selectedTeam) return
 
-    const submission = submissions.find(
-      (sub) => sub.taskId === task.id && sub.teamId === selectedTeam.id
-    )
+    const submission = submissions.find((item) => item.taskId === task.id && item.teamId === selectedTeam.id)
 
     setSelectedTaskDetails({
       id: task.id,
-      title: task.name,
-      description: task.description || "No description provided.",
+      taskId: task.id,
+      title: task.name || `Task ${task.id}`,
+      description: task.description || "",
+      teamId: selectedTeam.id,
       teamName: selectedTeam.name,
-      className: selectedTeam.className || "Not specified",
-      gradeName: selectedTeam.gradeName || "Not specified",
+      className: selectedTeam.className || null,
+      gradeName: selectedTeam.gradeName || null,
       teamLeaderName: selectedTeam.teamLeaderName || null,
       assignmentType: getTaskAssignmentType(task),
       statusLabel: getTaskStatusLabel(task, selectedTeam.id),
@@ -926,16 +936,52 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
     if (!selectedTeam) return null
 
     let teamTasks = []
-
+    
+    // For students, show all tasks assigned to them (like PhasesSection)
+    // For other roles, filter tasks by team criteria
     if (isStudent(user)) {
+      // Students should see all tasks assigned to them, not filtered by team
       teamTasks = tasks
+      console.log(`TeamsProgress - Student: Showing all ${teamTasks.length} tasks assigned to student`)
     } else {
+      // For admins/engineers/reviewers, filter tasks for the selected team using getTasksForTeam
       teamTasks = getTasksForTeam(selectedTeam.id)
+      console.log(`TeamsProgress - Admin/Engineer: Showing ${teamTasks.length} tasks filtered for selected team`)
     }
+    
+    console.log("TeamsProgress - Selected Team:", selectedTeam);
+    console.log("TeamsProgress - All tasks:", tasks);
+    console.log("TeamsProgress - Tasks to show:", teamTasks);
+    
+    // Debug: Log each task's assignment details
+    teamTasks.forEach((task, index) => {
+      console.log(`TeamsProgress - Task ${index + 1}:`, {
+        id: task.id,
+        name: task.name,
+        gradeId: task.gradeId,
+        classId: task.classId,
+        teamId: task.teamId,
+        assignmentType: getTaskAssignmentType(task)
+      });
+    });
+    // Get team members for this team
+    const currentTeamMembers = teamMembers.filter((member) => member.teamId === selectedTeam.id)
+
+    // Get all submissions for this team to see which tasks they have
+    const teamSubmissions = submissions.filter((sub) => sub.teamId === selectedTeam.id)
+    const teamTaskIds = [...new Set(teamSubmissions.map((sub) => sub.taskId))]
+
+    console.log("Selected Team:", selectedTeam)
+    console.log("All Tasks:", tasks)
+    console.log("Team Tasks (filtered for selected team):", teamTasks)
+    console.log("Team Members:", currentTeamMembers)
+    console.log("Team Submissions:", teamSubmissions)
+    console.log("Team Task IDs:", teamTaskIds)
 
     return (
       <div className="task-grid-view">
         <div className="grid-header">
+          {/* Only show back button for non-student users */}
           {!isStudent(user) && (
             <button className="back-btn" onClick={() => setViewMode("teams")}>
               <ChevronLeft size={20} />
@@ -945,21 +991,45 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
           <h2>Task Status Grid - {selectedTeam.name}</h2>
           <div className="legend">
             <div className="legend-item">
-              <span className="task-badge badge-completed">Completed</span>
+              <div className="status-box completed-on-time"></div>
+              <span>Completed (On Time)</span>
             </div>
             <div className="legend-item">
-              <span className="task-badge badge-submitted">Submitted</span>
+              <div className="status-box completed-late"></div>
+              <span>Completed Late</span>
             </div>
             <div className="legend-item">
-              <span className="task-badge badge-pending">Pending</span>
+              <div className="status-box completed-very-late"></div>
+              <span>Completed Very Late (3+ days)</span>
             </div>
             <div className="legend-item">
-              <span className="task-badge badge-overdue">Deadline Passed / Rejected</span>
+              <div className="status-box submitted"></div>
+              <span>Submitted</span>
+            </div>
+            <div className="legend-item">
+              <div className="status-box submitted-late"></div>
+              <span>Submitted Late</span>
+            </div>
+            <div className="legend-item">
+              <div className="status-box submitted-very-late"></div>
+              <span>Submitted Very Late (3+ days)</span>
+            </div>
+            <div className="legend-item">
+              <div className="status-box deadline-passed"></div>
+              <span>Deadline Passed</span>
+            </div>
+            <div className="legend-item">
+              <div className="status-box not-completed-yet"></div>
+              <span>Pending</span>
+            </div>
+            <div className="legend-item">
+              <div className="status-box rejected"></div>
+              <span>Rejected</span>
             </div>
           </div>
         </div>
 
-        <div className="task-cards-container">
+        <div className="task-grid">
           {teamTasks.length === 0 ? (
             <div className="no-tasks-message">
               <div className="no-tasks-icon">
@@ -969,43 +1039,81 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
               <p>There are currently no tasks assigned to this team.</p>
             </div>
           ) : (
-            <div className="task-cards-grid">
-              {teamTasks.map((task) => {
-                const status = getTaskStatus(task.id, selectedTeam.id)
-                const timeRemaining = getTimeRemaining(task.deadline)
-                const isLate = task.isLate || timeRemaining === null
-                const hasSub = submissions.find(s => s.taskId === task.id && s.teamId === selectedTeam.id)
-
-                return (
-                  <div
-                    key={task.id}
-                    className="task-status-card"
-                    onClick={() => handleOpenTaskDetails(task)}
-                    role="button"
-                    tabIndex={0}
-                  >
-                    <div className="task-status-card-header">
-                      <h4 className="task-card-title">{task.name}</h4>
-                      {getStatusBadge(status)}
-                    </div>
-                    <div className="task-status-card-body">
-                      <span className="task-assignment-type">{getTaskAssignmentType(task)}</span>
-                      <div className="task-card-date-info">
-                        <span className="date-label">Deadline:</span>
-                        <span className="date-value">
-                          {task.deadline ? format(parseISO(task.deadline), "MMM dd, yyyy") : "No deadline"}
-                        </span>
+            /* Split tasks into chunks of 8 */
+            (() => {
+              const tasksPerRow = 8;
+              const taskChunks = [];
+              for (let i = 0; i < teamTasks.length; i += tasksPerRow) {
+                taskChunks.push(teamTasks.slice(i, i + tasksPerRow));
+              }
+              
+              return taskChunks.map((chunk, chunkIndex) => (
+              <div key={chunkIndex} className="grid-section">
+                {/* Header row for this chunk */}
+                <div className="grid-row header-row">
+                  {chunk.map((task) => (
+                    <div
+                      key={task.id}
+                      className="grid-cell header-cell task-header"
+                      role="button"
+                      tabIndex={0}
+                      title="View task details"
+                      onClick={() => handleOpenTaskDetails(task)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault()
+                          handleOpenTaskDetails(task)
+                        }
+                      }}
+                    >
+                      <div className="task-name">{task.name}</div>
+                      <div className="task-assignment-type">{getTaskAssignmentType(task)}</div>
+                      <div className="task-deadline">
+                        {task.deadline ? format(parseISO(task.deadline), "MMM dd, yyyy") : "No deadline"}
+                        {(() => {
+                          const timeRemaining = getTimeRemaining(task.deadline)
+                          const isLate = task.isLate || timeRemaining === null
+                          if (isLate && !submissions.find(s => s.taskId === task.id && s.teamId === selectedTeam.id)) {
+                            return <div className="deadline-warning">⚠️ Deadline Passed</div>
+                          } else if (timeRemaining) {
+                            return <div className="time-remaining">{timeRemaining}</div>
+                          }
+                          return null
+                        })()}
                       </div>
-                      {isLate && !hasSub ? (
-                        <div className="deadline-warning">⚠️ Deadline Passed</div>
-                      ) : timeRemaining ? (
-                        <div className="time-remaining">{timeRemaining}</div>
-                      ) : null}
                     </div>
-                  </div>
-                )
-              })}
-            </div>
+                  ))}
+                  {/* Fill remaining cells if chunk has less than 8 tasks */}
+                  {chunk.length < tasksPerRow && Array.from({ length: tasksPerRow - chunk.length }, (_, i) => (
+                    <div key={`empty-${i}`} className="grid-cell header-cell task-header empty-cell">
+                      <div className="task-name">-</div>
+                      <div className="task-assignment-type">-</div>
+                      <div className="task-deadline">-</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Data row for this chunk */}
+                <div className="grid-row data-row">
+                  {chunk.map((task) => {
+                    const status = getTaskStatus(task.id, selectedTeam.id)
+                    console.log(`Task ${task.id} status: ${status}`)
+                    return (
+                      <div key={task.id} className="grid-cell status-cell">
+                        {getStatusBox(status)}
+                      </div>
+                    )
+                  })}
+                  {/* Fill remaining cells if chunk has less than 8 tasks */}
+                  {chunk.length < tasksPerRow && Array.from({ length: tasksPerRow - chunk.length }, (_, i) => (
+                    <div key={`empty-status-${i}`} className="grid-cell status-cell empty-cell">
+                      <div className="status-box empty"></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ));
+          })()
           )}
         </div>
       </div>
