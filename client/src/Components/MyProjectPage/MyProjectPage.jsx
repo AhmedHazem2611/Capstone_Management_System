@@ -298,8 +298,19 @@ const MyProjectPage = ({ user }) => {
             <textarea
               className="textarea"
               rows={8}
+              ref={(el) => {
+                if (el) {
+                  el.style.height = 'auto';
+                  el.style.height = Math.max(160, el.scrollHeight + 4) + 'px';
+                }
+              }}
               value={form.description}
-              onChange={(e) => handleChange("description", e.target.value)}
+              onChange={(e) => {
+                handleChange("description", e.target.value)
+                e.target.style.height = 'auto'
+                e.target.style.height = Math.max(160, e.target.scrollHeight + 4) + 'px'
+              }}
+              style={{ minHeight: '160px', resize: 'vertical' }}
               placeholder="Describe the project scope, objectives, and technologies used"
               maxLength={1200}
             />

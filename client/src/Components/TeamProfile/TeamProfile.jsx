@@ -235,10 +235,20 @@ const TeamProfile = ({ teamId, user, setCurrentPage }) => {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                   <label style={{ fontSize: '12px', fontWeight: '600', color: '#4b5563' }}>Description</label>
                   <textarea
-                    rows={4}
+                    rows={8}
+                    ref={(el) => {
+                      if (el) {
+                        el.style.height = 'auto';
+                        el.style.height = Math.max(160, el.scrollHeight + 4) + 'px';
+                      }
+                    }}
                     value={editForm.description}
-                    onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-                    style={{ padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '14px' }}
+                    onChange={(e) => {
+                      setEditForm({ ...editForm, description: e.target.value })
+                      e.target.style.height = 'auto'
+                      e.target.style.height = Math.max(160, e.target.scrollHeight + 4) + 'px'
+                    }}
+                    style={{ padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '14px', minHeight: '160px', resize: 'vertical' }}
                     placeholder="Project Description"
                   />
                 </div>
