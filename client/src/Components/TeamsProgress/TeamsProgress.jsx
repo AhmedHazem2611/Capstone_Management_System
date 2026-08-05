@@ -8,7 +8,7 @@
  */
 
 import { useState, useEffect } from "react"
-import { Search, Users, Building, Grid, ChevronLeft, AlertTriangle, FileText } from "lucide-react"
+import { Search, Users, Building, Grid, ChevronLeft, AlertTriangle, FileText, X } from "lucide-react"
 import { useNotification } from "../../contexts/NotificationContext"
 import { API_BASE_URL } from '../../config/apiConfig.js';
 import { parseISO, format } from "date-fns"
@@ -31,6 +31,8 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
   const [viewMode, setViewMode] = useState("teams") // 'teams' or 'grid'
   const [searchTerm, setSearchTerm] = useState("")
   const [filterGrade, setFilterGrade] = useState("")
+  const [filterClass, setFilterClass] = useState("")
+  const [filterEngineer, setFilterEngineer] = useState("")
   const [studentTeam, setStudentTeam] = useState(null)
   const [assignedClasses, setAssignedClasses] = useState([])
   const [selectedTaskDetails, setSelectedTaskDetails] = useState(null)
@@ -603,14 +605,31 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
         return false // Student without team - don't show any teams
       }
 
-      // Engineer/Reviewer: Teams are already filtered by the API endpoint based on assigned classes
-      // Admin/Super Admin: Show all teams (no restrictions)
-
-      const matchesSearch =
+      // Search term
+      const matchesSearch = !searchTerm.trim() ||
         team.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        team.className?.toLowerCase().includes(searchTerm.toLowerCase())
-      const matchesGrade = !filterGrade || team.gradeId === Number.parseInt(filterGrade)
-      return matchesSearch && matchesGrade
+        team.className?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        team.gradeName?.toLowerCase().includes(searchTerm.toLowerCase())
+
+      // Grade filter
+      const matchesGrade = !filterGrade || Number(team.gradeId) === Number(filterGrade)
+
+      // Class filter
+      const matchesClass = !filterClass || team.className === filterClass || Number(team.classId) === Number(filterClass)
+
+      // Engineer filter
+      let matchesEngineer = true
+      if (filterEngineer) {
+        if (filterEngineer === "Unassigned") {
+          matchesEngineer = !team.SupervisorAccountId && !team.supervisorAccountId && !team.supervisorName
+        } else {
+          const engNameLower = filterEngineer.toLowerCase()
+          const supName = (team.supervisorName || "").toLowerCase()
+          matchesEngineer = supName.includes(engNameLower)
+        }
+      }
+
+      return matchesSearch && matchesGrade && matchesClass && matchesEngineer
     })
   })()
 
@@ -670,23 +689,42 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
           </div>
         )}
 
-        <div className="filters">
-          <div className="search-box">
+        <div className="filters" style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center', marginBottom: '24px' }}>
+          {/* Search Box */}
+          <div className="search-box" style={{ flex: '1', minWidth: '220px', position: 'relative' }}>
             <Search size={20} />
             <input
               type="text"
-              placeholder="Search teams..."
+              placeholder="Search teams, classes, or grades..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              style={{ paddingRight: searchTerm ? '32px' : '12px' }}
             />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm("")}
+                style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+                aria-label="Clear search"
+              >
+                <X size={16} />
+              </button>
+            )}
           </div>
 
-          <select value={filterGrade} onChange={(e) => setFilterGrade(e.target.value)} className="grade-filter">
+          {/* Grade Filter */}
+          <select
+            value={filterGrade}
+            onChange={(e) => {
+              setFilterGrade(e.target.value)
+              setFilterClass("")
+            }}
+            className="grade-filter"
+            style={{ minWidth: '150px' }}
+          >
             <option value="">All Grades</option>
             {(() => {
               const engineerUser = isEngineer(user)
               if (engineerUser) {
-                // Only grades from assigned classes (even if no teams)
                 const uniqueAssignedGrades = Array.from(
                   new Map(
                     (assignedClasses || [])
@@ -705,6 +743,63 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
               ))
             })()}
           </select>
+
+          {/* Class Filter (Cascading) */}
+          <select
+            value={filterClass}
+            onChange={(e) => setFilterClass(e.target.value)}
+            className="grade-filter"
+            style={{ minWidth: '150px' }}
+          >
+            <option value="">All Classes</option>
+            {(() => {
+              const engineerUser = isEngineer(user)
+              let availableClasses = engineerUser ? assignedClasses : classes
+
+              if (filterGrade) {
+                availableClasses = availableClasses.filter(c => Number(c.gradeId || c.GradeId) === Number(filterGrade))
+              }
+
+              const uniqueClassNames = Array.from(new Set(availableClasses.map(c => c.className || c.ClassName).filter(Boolean)))
+
+              return uniqueClassNames.map((cName, idx) => (
+                <option key={`c-${idx}`} value={cName}>{cName}</option>
+              ))
+            })()}
+          </select>
+
+          {/* Engineer Filter (Hidden for Engineers) */}
+          {!isEngineer(user) && (
+            <select
+              value={filterEngineer}
+              onChange={(e) => setEngineerFilter(e.target.value)}
+              className="grade-filter"
+              style={{ minWidth: '160px' }}
+            >
+              <option value="">All Engineers</option>
+              <option value="Unassigned">Unassigned</option>
+              {Array.from(new Set(teams.map(t => t.supervisorName).filter(Boolean))).map((engName, idx) => (
+                <option key={`eng-${idx}`} value={engName}>
+                  {engName}
+                </option>
+              ))}
+            </select>
+          )}
+
+          {/* Clear Filters Button */}
+          {(searchTerm || filterGrade || filterClass || filterEngineer) && (
+            <button
+              onClick={() => {
+                setSearchTerm("")
+                setFilterGrade("")
+                setFilterClass("")
+                setFilterEngineer("")
+              }}
+              style={{ padding: '8px 14px', backgroundColor: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              <X size={14} /> Clear Filters
+            </button>
+          )}
         </div>
 
         <div className="teams-progress-grid">
