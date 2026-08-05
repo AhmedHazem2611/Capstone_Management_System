@@ -578,7 +578,7 @@ const EngineersTasksPage = ({ currentUserId, user, setCurrentPage, setSelectedTa
                                                         borderRadius: '10px',
                                                         padding: '14px',
                                                         marginBottom: '12px',
-                                                        border: allSubmitted ? '1.5px solid #bbf7d0' : '1px solid #e2e8f0',
+                                                        border: allSubmitted ? '1px solid #bbf7d0' : '1px solid #e2e8f0',
                                                         boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
                                                         display: 'flex',
                                                         flexDirection: 'column',
