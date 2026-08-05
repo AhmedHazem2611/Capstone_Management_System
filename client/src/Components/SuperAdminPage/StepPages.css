@@ -331,8 +331,9 @@
 }
 
 /* Step 2: Assign Engineers - Unique Styles */
-.step2-assign-engineers {
-  background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
+.step2-assign-engineers,
+.step2-assign-engineers * {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif !important;
 }
 
 .step2-content {
