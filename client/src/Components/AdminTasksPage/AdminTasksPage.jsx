@@ -205,10 +205,10 @@ const AdminTasksPage = ({ currentUserId = null, user = null, setCurrentPage, set
       const submissionsRaw = submissionsRes?.data
       const submissionsList = Array.isArray(submissionsRaw) ? submissionsRaw : submissionsRaw?.$values ? submissionsRaw.$values : []
       const normalizedSubmissions = submissionsList.map((s) => ({
-        id: s.taskSubmissionId ?? s.TaskSubmissionId ?? s.id,
-        taskId: Number(s.taskId ?? s.TaskId),
-        teamId: Number(s.teamId ?? s.TeamId),
-        statusId: Number(s.statusId ?? s.StatusId),
+        id: s.taskSubmissionId ?? s.TaskSubmissionId ?? s.taskSubmission_ID ?? s.TaskSubmission_ID ?? s.id,
+        taskId: Number(s.taskId ?? s.TaskId ?? s.task_ID ?? s.Task_ID ?? 0),
+        teamId: Number(s.teamId ?? s.TeamId ?? s.team_ID ?? s.Team_ID ?? 0),
+        statusId: Number(s.statusId ?? s.StatusId ?? s.status_ID ?? s.Status_ID ?? 0),
       }))
 
       let assignedClasses = []
@@ -1274,39 +1274,51 @@ const AdminTasksPage = ({ currentUserId = null, user = null, setCurrentPage, set
                           )
                         }
 
-                        // 2. Get tasks assigned for this week matching grade filter
-                        const weekTasks = tasks.filter(t => {
-                          if (Number(t.weekId) !== Number(week.id)) return false
-                          if (filteredGradeName) {
-                            return (t.gradeName || "").toLowerCase().includes(filteredGradeName)
-                          }
-                          return true
-                        })
-
-                        // 3. Calculate how many teams completed all tasks for this week
+                        // 2. Count how many teams completed their tasks for this week
                         let completedTeamsCount = 0
                         relevantTeams.forEach(team => {
-                          const teamId = Number(team.id)
+                          const teamIdNum = Number(team.id)
+                          const teamGradeId = team.gradeId != null ? Number(team.gradeId) : null
+                          const teamClassId = team.classId != null ? Number(team.classId) : null
 
-                          if (weekTasks.length === 0) {
-                            // If no specific tasks created for this week, check if team has any completed submission for this week
-                            const hasAnyCompleted = submissions.some(s => 
-                              s.teamId === teamId && 
-                              (s.statusId === STATUS_CONSTANTS.TASK_COMPLETED || s.statusId === STATUS_CONSTANTS.TASK_COMPLETED_LATE)
-                            )
-                            if (hasAnyCompleted) completedTeamsCount++
-                            return
-                          }
+                          // Tasks assigned for this week that apply to this team
+                          const applicableTasks = tasks.filter(t => {
+                            if (Number(t.weekId) !== Number(week.id)) return false
+                            const tGradeId = t.gradeId != null ? Number(t.gradeId) : null
+                            const tClassId = t.classId != null ? Number(t.classId) : null
+                            const tTeamId = t.teamId != null ? Number(t.teamId) : null
 
-                          const weekTaskIds = new Set(weekTasks.map(t => Number(t.id)))
-                          const completedTasksForTeam = submissions.filter(s => {
-                            if (s.teamId !== teamId || !weekTaskIds.has(s.taskId)) return false
-                            const sId = Number(s.statusId)
-                            return sId === STATUS_CONSTANTS.TASK_COMPLETED || sId === STATUS_CONSTANTS.TASK_COMPLETED_LATE
-                          }).length
+                            if (tTeamId && tTeamId === teamIdNum) return true
+                            if (tClassId && tClassId === teamClassId && !tTeamId) return true
+                            if (tGradeId && tGradeId === teamGradeId && !tClassId && !tTeamId) return true
+                            if (!tGradeId && !tClassId && !tTeamId) return true
 
-                          if (completedTasksForTeam >= weekTasks.length) {
-                            completedTeamsCount++
+                            return submissions.some(s => Number(s.taskId) === Number(t.id) && Number(s.teamId) === teamIdNum)
+                          })
+
+                          if (applicableTasks.length > 0) {
+                            const applicableTaskIds = new Set(applicableTasks.map(t => Number(t.id)))
+                            const completedCount = submissions.filter(s => {
+                              if (Number(s.teamId) !== teamIdNum || !applicableTaskIds.has(Number(s.taskId))) return false
+                              const sId = Number(s.statusId)
+                              return sId === STATUS_CONSTANTS.TASK_COMPLETED || sId === STATUS_CONSTANTS.TASK_COMPLETED_LATE
+                            }).length
+
+                            if (completedCount > 0) {
+                              completedTeamsCount++
+                            }
+                          } else {
+                            // If no specific applicable task in list, check if team has any completed submission for a task in this week
+                            const hasCompletedSubmission = submissions.some(s => {
+                              if (Number(s.teamId) !== teamIdNum) return false
+                              const sId = Number(s.statusId)
+                              const isCompleted = sId === STATUS_CONSTANTS.TASK_COMPLETED || sId === STATUS_CONSTANTS.TASK_COMPLETED_LATE
+                              if (!isCompleted) return false
+
+                              const task = tasks.find(t => Number(t.id) === Number(s.taskId))
+                              return task && Number(task.weekId) === Number(week.id)
+                            })
+                            if (hasCompletedSubmission) completedTeamsCount++
                           }
                         })
 
