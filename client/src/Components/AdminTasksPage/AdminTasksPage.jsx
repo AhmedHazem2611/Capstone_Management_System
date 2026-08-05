@@ -1245,11 +1245,12 @@ const AdminTasksPage = ({ currentUserId = null, user = null, setCurrentPage, set
 
                       {/* Weekly Team Completion Progress Bar */}
                       {(() => {
-                        // 1. Filter teams based on selectedGradeFilter
-                        const filteredGradeName = String(selectedGradeFilter || "").trim().toLowerCase()
+                        // 1. Filter teams based on selectedGradeFilter (selectedGradeFilter is Grade ID like "1", "2", "3")
+                        const filterGradeId = selectedGradeFilter ? Number(selectedGradeFilter) : null
                         const relevantTeams = teams.filter(team => {
-                          if (!filteredGradeName) return true
-                          return (team.gradeName || "").toLowerCase().includes(filteredGradeName)
+                          if (!filterGradeId) return true
+                          const teamGradeId = team.gradeId != null ? Number(team.gradeId) : null
+                          return teamGradeId === filterGradeId
                         })
 
                         if (relevantTeams.length === 0) {
@@ -1263,8 +1264,9 @@ const AdminTasksPage = ({ currentUserId = null, user = null, setCurrentPage, set
                         // 2. Collect all task IDs assigned to this week (matching grade filter if applied)
                         const weekTasks = tasks.filter(t => {
                           if (Number(t.weekId) !== Number(week.id)) return false
-                          if (filteredGradeName) {
-                            return (t.gradeName || "").toLowerCase().includes(filteredGradeName)
+                          if (filterGradeId) {
+                            const taskGradeId = t.gradeId != null ? Number(t.gradeId) : null
+                            return taskGradeId === filterGradeId
                           }
                           return true
                         })
@@ -1283,8 +1285,9 @@ const AdminTasksPage = ({ currentUserId = null, user = null, setCurrentPage, set
 
                               const matchingTask = tasks.find(t => Number(t.id) === sTaskId)
                               if (matchingTask && Number(matchingTask.weekId) === Number(week.id)) {
-                                if (filteredGradeName) {
-                                  return (matchingTask.gradeName || "").toLowerCase().includes(filteredGradeName)
+                                if (filterGradeId) {
+                                  const mGradeId = matchingTask.gradeId != null ? Number(matchingTask.gradeId) : null
+                                  return mGradeId === filterGradeId
                                 }
                                 return true
                               }
