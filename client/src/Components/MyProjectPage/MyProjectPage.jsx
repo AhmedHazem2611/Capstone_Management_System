@@ -182,6 +182,9 @@ const MyProjectPage = ({ user }) => {
           statusId: 1
         })
         toast.success("Project saved", { id: "save-project" })
+        if (form.nameEn) {
+          setTeam((prev) => (prev ? { ...prev, teamName: form.nameEn } : prev))
+        }
       } catch (err) {
         if (err?.response?.status === 403) {
           toast.error("Not allowed to save (leader or admin only)", { id: "save-project" })
