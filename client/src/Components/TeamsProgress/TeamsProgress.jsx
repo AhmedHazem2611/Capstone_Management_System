@@ -32,7 +32,7 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
   const [searchTerm, setSearchTerm] = useState("")
   const [filterGrade, setFilterGrade] = useState("")
   const [filterClass, setFilterClass] = useState("")
-  const [filterEngineer, setFilterEngineer] = useState("")
+  const [engineerFilter, setEngineerFilter] = useState("")
   const [engineersList, setEngineersList] = useState([])
   const [studentTeam, setStudentTeam] = useState(null)
   const [assignedClasses, setAssignedClasses] = useState([])
@@ -634,11 +634,11 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
 
       // Engineer filter
       let matchesEngineer = true
-      if (filterEngineer) {
-        if (filterEngineer === "Unassigned") {
+      if (engineerFilter) {
+        if (engineerFilter === "Unassigned") {
           matchesEngineer = !team.SupervisorAccountId && !team.supervisorAccountId && !team.supervisorName && (!team.engineers || team.engineers.length === 0)
         } else {
-          const engNameLower = filterEngineer.toLowerCase()
+          const engNameLower = engineerFilter.toLowerCase()
           const supName = (team.supervisorName || "").toLowerCase()
           const engList = (team.engineers || []).map(e => String(e).toLowerCase())
           matchesEngineer = supName.includes(engNameLower) || engList.some(e => e.includes(engNameLower))
@@ -787,7 +787,7 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
           {/* Engineer Filter (Hidden for Engineers) */}
           {!isEngineer(user) && (
             <select
-              value={filterEngineer}
+              value={engineerFilter}
               onChange={(e) => setEngineerFilter(e.target.value)}
               className="grade-filter"
               style={{ minWidth: '160px' }}
@@ -810,13 +810,13 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
           )}
 
           {/* Clear Filters Button */}
-          {(searchTerm || filterGrade || filterClass || filterEngineer) && (
+          {(searchTerm || filterGrade || filterClass || engineerFilter) && (
             <button
               onClick={() => {
                 setSearchTerm("")
                 setFilterGrade("")
                 setFilterClass("")
-                setFilterEngineer("")
+                setEngineerFilter("")
               }}
               style={{ padding: '8px 14px', backgroundColor: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}
             >
