@@ -246,7 +246,6 @@ const AdminTasksPage = ({ currentUserId = null, user = null, setCurrentPage, set
       // Process Weeks
       const weeksRaw = weeksRes?.data || []
       const weeksList = Array.isArray(weeksRaw) ? weeksRaw : weeksRaw?.$values || []
-      setWeeks(weeksList)
 
       setTasks(normalizedTasks)
       setGrades(normalizedGrades)
@@ -255,7 +254,7 @@ const AdminTasksPage = ({ currentUserId = null, user = null, setCurrentPage, set
       setAssignedClasses(assignedClasses)
       setCapstoneLeads(capstoneLeadsList)
       setEngineers(engineersList)
-      setWeeks(normalizedWeeks)
+      setWeeks(weeksList)
       setSubmissions(normalizedSubmissions)
     } catch (err) {
       if (isDevelopment() === 'development') {

@@ -269,11 +269,18 @@ public class TaskSubmissionService : ITaskSubmissionService
     private static bool IsPrivileged(string role)
     {
         if (string.IsNullOrWhiteSpace(role)) return false;
-        role = role.Replace(" ", string.Empty, StringComparison.OrdinalIgnoreCase);
-        return (role.Equals("SuperAdmin", StringComparison.OrdinalIgnoreCase) || role.Equals("Admin", StringComparison.OrdinalIgnoreCase))
-            || role.Equals("Board", StringComparison.OrdinalIgnoreCase)
-            || role.Equals("StaffAdmin", StringComparison.OrdinalIgnoreCase)
-            || role.Equals("Engineer", StringComparison.OrdinalIgnoreCase)
-            || role.Equals("CapstoneLead", StringComparison.OrdinalIgnoreCase);
+        var cleanRole = role.Replace(" ", string.Empty, StringComparison.OrdinalIgnoreCase).Trim();
+        if (int.TryParse(cleanRole, out int roleId))
+        {
+            return roleId != 4; // 4 is Student; all other role IDs are privileged
+        }
+        return cleanRole.Equals("SuperAdmin", StringComparison.OrdinalIgnoreCase)
+            || cleanRole.Equals("Admin", StringComparison.OrdinalIgnoreCase)
+            || cleanRole.Equals("Board", StringComparison.OrdinalIgnoreCase)
+            || cleanRole.Equals("StaffAdmin", StringComparison.OrdinalIgnoreCase)
+            || cleanRole.Equals("Engineer", StringComparison.OrdinalIgnoreCase)
+            || cleanRole.Equals("CapstoneLead", StringComparison.OrdinalIgnoreCase)
+            || cleanRole.Equals("Supervisor", StringComparison.OrdinalIgnoreCase)
+            || cleanRole.Equals("Reviewer", StringComparison.OrdinalIgnoreCase);
     }
 }
