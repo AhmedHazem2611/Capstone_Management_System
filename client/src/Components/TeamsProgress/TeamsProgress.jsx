@@ -698,7 +698,9 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
             return (
               <div key={team.id} className="teams-progress-card" onClick={() => selectTeam(team)}>
                 <div className="teams-progress-card-header">
-                  <Building size={24} />
+                  <div className="teams-progress-card-icon">
+                    <Building size={18} />
+                  </div>
                   <h3>{team.name}</h3>
                 </div>
                 <div className="teams-progress-card-info">
