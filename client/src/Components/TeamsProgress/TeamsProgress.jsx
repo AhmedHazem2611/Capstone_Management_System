@@ -33,6 +33,7 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
   const [filterGrade, setFilterGrade] = useState("")
   const [filterClass, setFilterClass] = useState("")
   const [filterEngineer, setFilterEngineer] = useState("")
+  const [engineersList, setEngineersList] = useState([])
   const [studentTeam, setStudentTeam] = useState(null)
   const [assignedClasses, setAssignedClasses] = useState([])
   const [selectedTaskDetails, setSelectedTaskDetails] = useState(null)
@@ -61,13 +62,14 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
         ? axiosInstance.get(`/Teams/Assignments`)
         : Promise.resolve({ data: [] })
 
-      const [teamsRes, submissionsRes, gradesRes, classesRes, teamMembersRes, assignmentsRes] = await Promise.all([
+      const [teamsRes, submissionsRes, gradesRes, classesRes, teamMembersRes, assignmentsRes, engineersRes] = await Promise.all([
         axiosInstance.get(teamsEndpoint.replace(API_BASE_URL, '')),
         axiosInstance.get(`/TaskSubmissions`),
         axiosInstance.get(`/Grades`),
         axiosInstance.get(`/Class`),
         axiosInstance.get(`/TeamMembers`),
         assignmentsPromise,
+        axiosInstance.get(`/Account/ByRoleName/Engineer`).catch(() => ({ data: [] })),
       ])
 
       // Process teams data using the same robust approach as ViewTasks
@@ -132,11 +134,31 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
       const teamMembersList = Array.isArray(teamMembersRaw) ? teamMembersRaw : teamMembersRaw?.$values ? teamMembersRaw.$values : []
       const teamMembersData = teamMembersList
 
+      const engineersRaw = engineersRes?.data
+      const engineersListParsed = Array.isArray(engineersRaw) ? engineersRaw : (engineersRaw?.$values || [])
+      setEngineersList(engineersListParsed)
+
+      // Fetch reviewers/engineers per class
+      const classIdsToFetch = [...new Set(teamsData.map(t => t.classId ?? t.ClassId).filter(Boolean))];
+      const classEngineersMap = {};
+
+      await Promise.all(classIdsToFetch.map(async (classId) => {
+        try {
+          const revRes = await axiosInstance.get(`/Account/Reviewers/ByClass/${classId}`);
+          const rData = revRes.data;
+          const rList = Array.isArray(rData) ? rData : rData?.$values || [];
+          classEngineersMap[classId] = rList.map(r => r.fullNameEn || r.fullNameAr || r.memberName || "Engineer");
+        } catch (err) {
+          classEngineersMap[classId] = [];
+        }
+      }));
+
       // Process teams with class and grade info (using same approach as ViewTasks)
       const processedTeams = teamsData.map((team) => {
         // Find the class to get grade information
         const classInfo = classesData.find((c) => c.id === (team.classId ?? team.ClassId))
-        
+        const teamClassId = team.classId ?? team.ClassId
+
         // Get team members for this team
         const teamMembers = teamMembersData
           .filter((tm) => tm.teamId === (team.teamId ?? team.id ?? team.Id))
@@ -151,24 +173,17 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
         const teamGradeId = team.gradeId || team.GradeId || classInfo?.gradeId || classInfo?.GradeId
         const teamGradeName = team.gradeName || team.GradeName || classInfo?.gradeName || classInfo?.GradeName
 
-        // Debug logging for grade information
-        console.log(`TeamsProgress - Processing team ${team.teamName || team.TeamName}:`, {
-          teamGradeId: teamGradeId,
-          teamGradeName: team.gradeName || team.GradeName,
-          classInfoGradeId: classInfo?.gradeId || classInfo?.GradeId,
-          finalGradeId: teamGradeId,
-          finalGradeName: teamGradeName
-        })
-
         return {
           id: team.teamId ?? team.id ?? team.Id,
           name: team.teamName ?? team.TeamName,
-          classId: team.classId ?? team.ClassId,
+          classId: teamClassId,
           className: team.className ?? team.ClassName,
           gradeId: teamGradeId,
           gradeName: teamGradeName,
           teamMembers,
-          SupervisorAccountId: team.SupervisorAccountId ?? team.supervisorAccountId ?? team.supervisorAccountId ?? null,
+          SupervisorAccountId: team.SupervisorAccountId ?? team.supervisorAccountId ?? null,
+          supervisorName: team.supervisorName || team.SupervisorName || (classEngineersMap[teamClassId] && classEngineersMap[teamClassId][0]) || "",
+          engineers: classEngineersMap[teamClassId] || [],
           teamLeaderAccountId: team.teamLeaderAccountId || team.TeamLeaderAccountId,
           teamLeaderName: team.teamLeaderName || team.TeamLeaderName,
         }
@@ -621,11 +636,12 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
       let matchesEngineer = true
       if (filterEngineer) {
         if (filterEngineer === "Unassigned") {
-          matchesEngineer = !team.SupervisorAccountId && !team.supervisorAccountId && !team.supervisorName
+          matchesEngineer = !team.SupervisorAccountId && !team.supervisorAccountId && !team.supervisorName && (!team.engineers || team.engineers.length === 0)
         } else {
           const engNameLower = filterEngineer.toLowerCase()
           const supName = (team.supervisorName || "").toLowerCase()
-          matchesEngineer = supName.includes(engNameLower)
+          const engList = (team.engineers || []).map(e => String(e).toLowerCase())
+          matchesEngineer = supName.includes(engNameLower) || engList.some(e => e.includes(engNameLower))
         }
       }
 
@@ -778,7 +794,14 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
             >
               <option value="">All Engineers</option>
               <option value="Unassigned">Unassigned</option>
-              {Array.from(new Set(teams.map(t => t.supervisorName).filter(Boolean))).map((engName, idx) => (
+              {Array.from(
+                new Set(
+                  [
+                    ...engineersList.map(e => e.fullNameEn || e.fullNameAr || e.memberName || e.name || e.email),
+                    ...teams.flatMap(t => [...(t.engineers || []), t.supervisorName, t.SupervisorName])
+                  ].filter(Boolean)
+                )
+              ).map((engName, idx) => (
                 <option key={`eng-${idx}`} value={engName}>
                   {engName}
                 </option>
