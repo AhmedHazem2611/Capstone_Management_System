@@ -190,20 +190,24 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
       })
 
       // Fetch tasks based on role
-      let tasksEndpoint = `${API_BASE_URL}/AccountTask`
       let rawTasks = []
-      if (isStudent(user)) {
-        if (!currentUserId) {
-          console.error('TeamsProgress - No current user ID found for student')
-        } else {
-          console.log(`TeamsProgress - Fetching tasks for student ${currentUserId}`)
+      try {
+        if (isStudent(user) && currentUserId) {
+          console.log(`TeamsProgress - Fetching student tasks for ${currentUserId}`)
           const userTasksRes = await axiosInstance.get(`/AccountTask/StudentTasks/${currentUserId}`)
-          rawTasks = userTasksRes.data.$values || userTasksRes.data || []
+          const studentTasksList = userTasksRes.data?.$values || userTasksRes.data || []
+          if (Array.isArray(studentTasksList) && studentTasksList.length > 0) {
+            rawTasks = studentTasksList
+          }
         }
-      } else {
-        console.log(`TeamsProgress - Fetching all tasks for admin/engineer/reviewer from: ${tasksEndpoint}`)
-        const allTasksRes = await axiosInstance.get(tasksEndpoint.replace(API_BASE_URL, ''))
-        rawTasks = allTasksRes.data.$values || allTasksRes.data || []
+      } catch (err) {
+        console.log('TeamsProgress - StudentTasks endpoint returned error/empty, falling back to /AccountTask')
+      }
+
+      if (!rawTasks || rawTasks.length === 0) {
+        console.log(`TeamsProgress - Fetching all tasks from /AccountTask`)
+        const allTasksRes = await axiosInstance.get(`/AccountTask`)
+        rawTasks = allTasksRes.data?.$values || allTasksRes.data || []
       }
 
       const processedTasks = rawTasks.map((task) => ({
@@ -248,24 +252,21 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
       try {
         if (isEngineer(user) && currentUserId) {
           const assignmentsRaw = assignmentsRes?.data
-          const assignmentsList = Array.isArray(assignmentsRaw) ? assignmentsRaw : (assignmentsRaw?.$values || [])
-          const normalizedAssignments = assignmentsList.map(a => ({
-            accountId: a.accountId || a.AccountId,
-            assignedClassId: a.assignedClassId || a.AssignedClassId
+          const assignmentsList = Array.isArray(assignmentsRaw)
+            ? assignmentsRaw
+            : assignmentsRaw?.$values || []
+          const myAssignments = assignmentsList.filter(a => String(a.engineerAccountId || a.EngineerAccountId) === String(currentUserId))
+          const myClassIds = Array.from(new Set(myAssignments.map(a => a.classId || a.ClassId).filter(Boolean)))
+          const assigned = classesData.filter(c => myClassIds.includes(c.id || c.Id)).map(c => ({
+            classId: c.id || c.Id,
+            className: c.className || c.ClassName,
+            gradeId: c.gradeId || c.GradeId,
+            gradeName: c.gradeName || c.GradeName
           }))
-          const assignedIdsSet = new Set(
-            normalizedAssignments
-              .filter(a => Number(a.accountId) === Number(currentUserId))
-              .map(a => a.assignedClassId)
-              .filter(Boolean)
-          )
-          const engineerAssignedClasses = classesData.filter(c => assignedIdsSet.has(c.id || c.Id))
-          setAssignedClasses(engineerAssignedClasses)
-        } else {
-          setAssignedClasses([])
+          setAssignedClasses(assigned)
         }
-      } catch (e) {
-        setAssignedClasses([])
+      } catch (err) {
+        console.error("TeamsProgress - Error computing engineer assigned classes:", err)
       }
 
       setTeams(processedTeams)
@@ -275,18 +276,21 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
       setClasses(classesData)
       setTeamMembers(processedTeamMembers)
 
-      // If user is a student, find their team and set it automatically
+      // If user is a student, find their team (either by leader ID or member ID) and set it automatically
       if (isStudent(user) && currentUserId) {
-        const userTeamMember = processedTeamMembers.find(tm => tm.id === currentUserId)
-        if (userTeamMember) {
-          const userTeam = processedTeams.find(team => team.id === userTeamMember.teamId)
-          if (userTeam) {
-            setStudentTeam(userTeam)
-            setSelectedTeam(userTeam)
-            setViewMode("grid")
+        let userTeam = processedTeams.find(team => Number(team.teamLeaderAccountId) === Number(currentUserId))
+        if (!userTeam) {
+          const userTeamMember = processedTeamMembers.find(tm => Number(tm.id) === Number(currentUserId))
+          if (userTeamMember) {
+            userTeam = processedTeams.find(team => Number(team.id) === Number(userTeamMember.teamId))
           }
         }
-        if (!userTeamMember) {
+
+        if (userTeam) {
+          setStudentTeam(userTeam)
+          setSelectedTeam(userTeam)
+          setViewMode("grid")
+        } else {
           const virtualTeam = {
             id: null,
             name: "My Class Tasks",
@@ -939,14 +943,13 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
 
     // For students, show all tasks assigned to them (like PhasesSection)
     // For other roles, filter tasks by team criteria
-    if (isStudent(user)) {
-      // Students should see all tasks assigned to them, not filtered by team
-      teamTasks = tasks
-      console.log(`TeamsProgress - Student: Showing all ${teamTasks.length} tasks assigned to student`)
-    } else {
-      // For admins/engineers/reviewers, filter tasks for the selected team using getTasksForTeam
+    if (selectedTeam && selectedTeam.id) {
       teamTasks = getTasksForTeam(selectedTeam.id)
-      console.log(`TeamsProgress - Admin/Engineer: Showing ${teamTasks.length} tasks filtered for selected team`)
+      if (isStudent(user) && teamTasks.length === 0) {
+        teamTasks = tasks
+      }
+    } else {
+      teamTasks = tasks
     }
 
     console.log("TeamsProgress - Selected Team:", selectedTeam);
