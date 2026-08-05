@@ -34,6 +34,62 @@ const Sidebar = ({ currentPage, setCurrentPage, isOpen, setIsOpen, user, onLogou
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen, setIsOpen]);
 
+  // Resizable Sidebar logic
+  const DEFAULT_WIDTH = 220;
+  const MIN_WIDTH = 160;
+  const MAX_WIDTH = 400;
+
+  const [sidebarWidth, setSidebarWidth] = useState(() => {
+    const saved = localStorage.getItem("sidebarWidth");
+    return saved ? parseInt(saved, 10) : DEFAULT_WIDTH;
+  });
+  const [isResizing, setIsResizing] = useState(false);
+
+  useEffect(() => {
+    document.documentElement.style.setProperty("--sidebar-width", `${sidebarWidth}px`);
+    localStorage.setItem("sidebarWidth", sidebarWidth);
+  }, [sidebarWidth]);
+
+  const handleMouseDown = (e) => {
+    e.preventDefault();
+    setIsResizing(true);
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (!isResizing) return;
+      let newWidth = e.clientX;
+      if (newWidth < MIN_WIDTH) newWidth = MIN_WIDTH;
+      if (newWidth > MAX_WIDTH) newWidth = MAX_WIDTH;
+      setSidebarWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      if (isResizing) {
+        setIsResizing(false);
+      }
+    };
+
+    if (isResizing) {
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+      document.body.style.userSelect = "none";
+      document.body.style.cursor = "col-resize";
+    } else {
+      document.body.style.userSelect = "";
+      document.body.style.cursor = "";
+    }
+
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isResizing]);
+
+  const handleResetWidth = () => {
+    setSidebarWidth(DEFAULT_WIDTH);
+  };
+
   return (
     <>
       {/* Mobile Overlay */}
@@ -49,6 +105,13 @@ const Sidebar = ({ currentPage, setCurrentPage, isOpen, setIsOpen, user, onLogou
       </button>
 
       <div className={`sidebar ${isOpen ? 'sidebar-open' : ''}`}>
+        {/* Resize Handle */}
+        <div
+          className={`sidebar-resizer ${isResizing ? 'is-dragging' : ''}`}
+          onMouseDown={handleMouseDown}
+          onDoubleClick={handleResetWidth}
+          title="Drag to resize sidebar (double-click to reset)"
+        />
         <div className="sidebar-header">
           <div className="logo">
             <img src={`${import.meta.env.BASE_URL}1732864917491%20(1).png`} className="logo-img" alt="Elsewedy Logo" />
