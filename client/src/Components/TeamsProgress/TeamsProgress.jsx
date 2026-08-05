@@ -944,13 +944,8 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
       teamTasks = tasks
       console.log(`TeamsProgress - Student: Showing all ${teamTasks.length} tasks assigned to student`)
     } else {
-      // For admins/engineers/reviewers, filter tasks for the selected team
-      const teamInfo = {
-        gradeId: selectedTeam.gradeId,
-        classId: selectedTeam.classId,
-        teamId: selectedTeam.id
-      }
-      teamTasks = filterTasksForTeam(tasks, teamInfo)
+      // For admins/engineers/reviewers, filter tasks for the selected team using getTasksForTeam
+      teamTasks = getTasksForTeam(selectedTeam.id)
       console.log(`TeamsProgress - Admin/Engineer: Showing ${teamTasks.length} tasks filtered for selected team`)
     }
     
