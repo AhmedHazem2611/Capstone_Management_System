@@ -507,44 +507,55 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
   }
 
   const getStatusBox = (status) => {
-    const statusLabels = {
-      "completed-on-time": "Completed",
-      "completed-late": "Completed Late",
-      "completed-very-late": "Completed Very Late",
-      submitted: "Submitted",
-      "submitted-late": "Submitted Late",
-      "submitted-very-late": "Submitted Very Late",
-      rejected: "Rejected",
-      "deadline-passed": "Deadline Passed",
-      pending: "Pending",
-      "not-completed-yet": "Not Completed Yet",
-    }
-
-    const label = statusLabels[status] || "Unknown Status"
-
     switch (status) {
       case "completed-on-time":
-        return <div className="status-box completed-on-time" title="Completed on time"><span className="status-box-label">{label}</span></div>
+        return (
+          <div className="status-box completed-on-time" title="Completed">
+            <span className="status-box-label">Completed</span>
+          </div>
+        )
       case "completed-late":
-        return <div className="status-box completed-late" title="Completed late"><span className="status-box-label">{label}</span></div>
       case "completed-very-late":
-        return <div className="status-box completed-very-late" title="Completed very late (3+ days)"><span className="status-box-label">{label}</span></div>
+        return (
+          <div className="status-box completed-late" title="Completed (Late)">
+            <span className="status-box-label">Completed</span>
+            <span className="late-tag">Late</span>
+          </div>
+        )
       case "submitted":
-        return <div className="status-box submitted" title="Submitted"><span className="status-box-label">{label}</span></div>
+        return (
+          <div className="status-box submitted" title="Submitted">
+            <span className="status-box-label">Submitted</span>
+          </div>
+        )
       case "submitted-late":
-        return <div className="status-box submitted-late" title="Submitted late"><span className="status-box-label">{label}</span></div>
       case "submitted-very-late":
-        return <div className="status-box submitted-very-late" title="Submitted very late (3+ days)"><span className="status-box-label">{label}</span></div>
+        return (
+          <div className="status-box submitted-late" title="Submitted (Late)">
+            <span className="status-box-label">Submitted</span>
+            <span className="late-tag">Late</span>
+          </div>
+        )
       case "rejected":
-        return <div className="status-box rejected" title="Rejected"><span className="status-box-label">{label}</span></div>
+        return (
+          <div className="status-box rejected" title="Rejected">
+            <span className="status-box-label">Rejected</span>
+          </div>
+        )
       case "deadline-passed":
-        return <div className="status-box deadline-passed" title="Deadline passed"><span className="status-box-label">{label}</span></div>
+        return (
+          <div className="status-box deadline-passed" title="Deadline Passed">
+            <span className="status-box-label">Deadline Passed</span>
+          </div>
+        )
       case "pending":
-        return <div className="status-box pending" title="Pending"><span className="status-box-label">{label}</span></div>
       case "not-completed-yet":
-        return <div className="status-box not-completed-yet" title="Not completed yet"><span className="status-box-label">{label}</span></div>
       default:
-        return <div className="status-box not-completed-yet" title="Unknown status"><span className="status-box-label">{label}</span></div>
+        return (
+          <div className="status-box pending" title="Pending">
+            <span className="status-box-label">Pending</span>
+          </div>
+        )
     }
   }
 
@@ -553,9 +564,8 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
 
     try {
       return format(parseISO(dateString), "MMM dd, yyyy hh:mm a")
-    } catch (error) {
-      console.error("Failed to format task date:", error)
-      return "Invalid date"
+    } catch (e) {
+      return dateString
     }
   }
 
@@ -573,17 +583,17 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
   const handleOpenTaskDetails = (task) => {
     if (!selectedTeam) return
 
-    const submission = submissions.find((item) => item.taskId === task.id && item.teamId === selectedTeam.id)
+    const submission = submissions.find(
+      (sub) => sub.taskId === task.id && sub.teamId === selectedTeam.id
+    )
 
     setSelectedTaskDetails({
       id: task.id,
-      taskId: task.id,
-      title: task.name || `Task ${task.id}`,
-      description: task.description || "",
-      teamId: selectedTeam.id,
+      title: task.name,
+      description: task.description || "No description provided.",
       teamName: selectedTeam.name,
-      className: selectedTeam.className || null,
-      gradeName: selectedTeam.gradeName || null,
+      className: selectedTeam.className || "Not specified",
+      gradeName: selectedTeam.gradeName || "Not specified",
       teamLeaderName: selectedTeam.teamLeaderName || null,
       assignmentType: getTaskAssignmentType(task),
       statusLabel: getTaskStatusLabel(task, selectedTeam.id),
@@ -874,9 +884,8 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
                 </div>
 
                 <div className="teams-progress-card-actions">
-                  <button className="teams-progress-view-grid-btn">
-                    <Grid size={16} />
-                    View Task Grid
+                  <button className="view-grid-btn">
+                    <Grid size={16} /> View Task Grid
                   </button>
                 </div>
               </div>
@@ -992,39 +1001,19 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
           <div className="legend">
             <div className="legend-item">
               <div className="status-box completed-on-time"></div>
-              <span>Completed (On Time)</span>
-            </div>
-            <div className="legend-item">
-              <div className="status-box completed-late"></div>
-              <span>Completed Late</span>
-            </div>
-            <div className="legend-item">
-              <div className="status-box completed-very-late"></div>
-              <span>Completed Very Late (3+ days)</span>
+              <span>Completed</span>
             </div>
             <div className="legend-item">
               <div className="status-box submitted"></div>
               <span>Submitted</span>
             </div>
             <div className="legend-item">
-              <div className="status-box submitted-late"></div>
-              <span>Submitted Late</span>
-            </div>
-            <div className="legend-item">
-              <div className="status-box submitted-very-late"></div>
-              <span>Submitted Very Late (3+ days)</span>
-            </div>
-            <div className="legend-item">
-              <div className="status-box deadline-passed"></div>
-              <span>Deadline Passed</span>
-            </div>
-            <div className="legend-item">
-              <div className="status-box not-completed-yet"></div>
+              <div className="status-box pending"></div>
               <span>Pending</span>
             </div>
             <div className="legend-item">
-              <div className="status-box rejected"></div>
-              <span>Rejected</span>
+              <div className="status-box deadline-passed"></div>
+              <span>Overdue / Rejected</span>
             </div>
           </div>
         </div>

@@ -641,53 +641,45 @@
   display: none;
 }
 
-.status-box.completed-on-time {
-  background: #16a34a !important; /* Darker green for completed late */
-
-}
-
-.status-box.completed-late {
-  background: linear-gradient(to right, #22c55e, #facc15) !important;
-}
-
-.status-box.submitted {
-    background: #16a34a60 !important; /* Darker green for completed late */
-
-}
-
-.status-box.rejected {
-  background: #ef4444 !important; /* Red for rejected */
-}
-
-.status-box.submitted-late {
-  background: #facc15 !important; /* Yellow for submitted (awaiting review) */
-}
-
-.status-box.submitted-very-late {
-  background: #dc2626 !important; /* Red for submitted very late (3+ days) */
-}
-
+.status-box.completed-on-time,
+.status-box.completed-late,
 .status-box.completed-very-late {
-  background: #dc2626 !important; /* Red for completed very late (3+ days) */
+  background: #10b981 !important; /* Clean Emerald Green for ALL completed tasks */
 }
 
-.status-box.deadline-passed {
-  background: #dc2626 !important; /* Dark red for deadline passed */
+.status-box.submitted,
+.status-box.submitted-late,
+.status-box.submitted-very-late {
+  background: #3b82f6 !important; /* Sky Blue for ALL submitted tasks */
 }
 
-.status-box.pending {
-  background: #64748b !important; /* Blue-gray for pending tasks */
-}
-
+.status-box.pending,
 .status-box.not-completed-yet {
-  background: #cbd5e1 !important; /* Light gray for not started */
+  background: #64748b !important; /* Neutral Slate Gray for pending tasks */
 }
 
-.status-box.completed-late .status-box-label,
-.status-box.submitted .status-box-label,
-.status-box.submitted-late .status-box-label,
-.status-box.not-completed-yet .status-box-label {
-  color: #0f172a;
+.status-box.deadline-passed,
+.status-box.rejected {
+  background: #ef4444 !important; /* Rose Red ONLY for Overdue & Rejected tasks */
+}
+
+.status-box-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #ffffff !important;
+}
+
+.late-tag {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.28);
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  margin-top: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .status-box.empty {
