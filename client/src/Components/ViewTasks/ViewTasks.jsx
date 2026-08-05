@@ -346,7 +346,7 @@ const ViewTasks = ({ teamIdFilter: initialTeamIdFilter = null, currentUserId = n
         // Fetch engineers for each unique class to support hosted backend without native engineers array
         const classIdsToFetch = [...new Set(normalizedTeams.map(t => t.classId).filter(Boolean))];
         const classEngineersMap = {};
-        
+
         await Promise.all(classIdsToFetch.map(async (classId) => {
           try {
             const revRes = await axiosInstance.get(`/Account/Reviewers/ByClass/${classId}`);
@@ -564,8 +564,8 @@ const ViewTasks = ({ teamIdFilter: initialTeamIdFilter = null, currentUserId = n
       String(engineerFilter || "").trim().length === 0 ||
       (team.engineers
         ? (team.engineers.length > 0
-            ? team.engineers.some(eng => eng.toLowerCase() === String(engineerFilter || "").toLowerCase())
-            : String(engineerFilter || "").toLowerCase() === "unassigned")
+          ? team.engineers.some(eng => eng.toLowerCase() === String(engineerFilter || "").toLowerCase())
+          : String(engineerFilter || "").toLowerCase() === "unassigned")
         : (team.supervisorName || "Unassigned").toLowerCase() === String(engineerFilter || "").toLowerCase())
 
     // Search filter - matches team name, class name, or grade name
@@ -574,7 +574,7 @@ const ViewTasks = ({ teamIdFilter: initialTeamIdFilter = null, currentUserId = n
       (team.teamName || "").toLowerCase().includes(String(searchTerm || "").toLowerCase()) ||
       (team.className || "").toLowerCase().includes(String(searchTerm || "").toLowerCase()) ||
       (team.gradeName || "").toLowerCase().includes(String(searchTerm || "").toLowerCase()) ||
-      (team.engineers 
+      (team.engineers
         ? team.engineers.some(eng => eng.toLowerCase().includes(String(searchTerm || "").toLowerCase()))
         : (team.supervisorName || "").toLowerCase().includes(String(searchTerm || "").toLowerCase()))
 
@@ -590,7 +590,7 @@ const ViewTasks = ({ teamIdFilter: initialTeamIdFilter = null, currentUserId = n
   // Show all tasks for the team's grade/class, not just submitted ones
   const getTasksForTeam = (teamId) => {
     if (!teams || teams.length === 0 || !tasks || tasks.length === 0) return []
-    
+
     const team = teams.find((t) => Number(t.id) === Number(teamId))
     if (!team) return []
 
@@ -606,15 +606,16 @@ const ViewTasks = ({ teamIdFilter: initialTeamIdFilter = null, currentUserId = n
 
       // Task is for this team
       if (taskTeamId === teamIdNum) return true
-      
+
       // Task is for this team's class (no specific team)
       if (taskClassId === teamClassId && !taskTeamId) return true
-      
+
       // Task is for this team's grade (no specific class or team)
       if (taskGradeId === teamGradeId && !taskClassId && !taskTeamId) return true
 
-      // Task has a submission from this team
-      if (submissions.some((s) => Number(s.taskId) === Number(task.id) && Number(s.teamId) === teamIdNum)) return true
+      // Team submitted for this task
+      const hasSubmission = submissions.some(s => Number(s.teamId) === teamIdNum && Number(s.taskId) === Number(task.id))
+      if (hasSubmission) return true
 
       return false
     })
@@ -647,7 +648,7 @@ const ViewTasks = ({ teamIdFilter: initialTeamIdFilter = null, currentUserId = n
 
   // For the selected team, get all tasks
   const teamTasks = selectedTeam ? getTasksForTeam(selectedTeam.id) : []
-  
+
   // Combine with submissions for display
   const submissionsWithTasks = submissions.map((submission) => {
     const task = tasks.find((t) => t.id === submission.taskId)
@@ -1173,7 +1174,7 @@ const ViewTasks = ({ teamIdFilter: initialTeamIdFilter = null, currentUserId = n
                       );
                     })}
                   </select>
-                  
+
                   {/* Engineer Filter */}
                   {!isEngineerUser && (
                     <select value={engineerFilter} onChange={(e) => setEngineerFilter(e.target.value)} className="filter-select">
@@ -1267,34 +1268,41 @@ const ViewTasks = ({ teamIdFilter: initialTeamIdFilter = null, currentUserId = n
                       <span className="team-grade">Grade: {team.gradeName || "N/A"}</span>
                     </div>
                     {/* Progress Bar replaces the 4 stat squares */}
-                    <div className="team-progress-container" style={{ margin: '16px 0', padding: '0 8px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.85rem', color: '#4b5563', fontWeight: '600' }}>
-                        <span>Overall Progress</span>
-                        <span>{stats.completed} / {stats.total} Tasks ({Math.round((stats.completed / Math.max(stats.total, 1)) * 100)}%)</span>
-                      </div>
-                      <div style={{ width: '100%', height: '10px', backgroundColor: '#e5e7eb', borderRadius: '5px', overflow: 'hidden' }}>
-                        <div style={{ 
-                          width: `${Math.round((stats.completed / Math.max(stats.total, 1)) * 100)}%`, 
-                          height: '100%', 
-                          backgroundColor: '#10b981',
-                          transition: 'width 0.5s ease-in-out'
-                        }}></div>
-                      </div>
-                    </div>
-                    <div className="team-engineer-bottom" style={{ 
-                      marginTop: '16px', 
+                    {(() => {
+                      const doneCount = (stats.completed || 0) + (stats.submitted || 0)
+                      const totalCount = Math.max(stats.total || 0, 1)
+                      const pct = Math.round((doneCount / totalCount) * 100)
+                      return (
+                        <div className="team-progress-container" style={{ margin: '16px 0', padding: '0 8px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.85rem', color: '#4b5563', fontWeight: '600' }}>
+                            <span>Overall Progress</span>
+                            <span>{doneCount} / {stats.total} Tasks ({pct}%)</span>
+                          </div>
+                          <div style={{ width: '100%', height: '10px', backgroundColor: '#e5e7eb', borderRadius: '5px', overflow: 'hidden' }}>
+                            <div style={{
+                              width: `${pct}%`,
+                              height: '100%',
+                              backgroundColor: '#10b981',
+                              transition: 'width 0.5s ease-in-out'
+                            }}></div>
+                          </div>
+                        </div>
+                      )
+                    })()}
+                    <div className="team-engineer-bottom" style={{
+                      marginTop: '16px',
                       paddingTop: '12px',
                       borderTop: '1px solid #f3f4f6',
-                      fontSize: '0.9rem', 
+                      fontSize: '0.9rem',
                       color: '#4b5563',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '8px'
                     }}>
                       <Users size={14} style={{ color: '#6b7280' }} />
-                      <span style={{ fontWeight: '600' }}>Engineer(s):</span> 
+                      <span style={{ fontWeight: '600' }}>Engineer(s):</span>
                       <span style={{ color: '#6b7280' }}>
-                        {team.engineers 
+                        {team.engineers
                           ? (team.engineers.length > 0 ? team.engineers.join(", ") : "Unassigned")
                           : (team.supervisorName || "Unassigned")}
                       </span>
@@ -1411,14 +1419,14 @@ const ViewTasks = ({ teamIdFilter: initialTeamIdFilter = null, currentUserId = n
                         backgroundColor: getStatusColor(task.statusId, task.taskDeadline, task.isPendingTask, task.isLate) + '20',
                         color: getStatusColor(task.statusId, task.taskDeadline, task.isPendingTask, task.isLate),
                         display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                        }}
-                      >
-                        {getStatusIcon(getStatusText(task.statusId, task.taskDeadline, task.isPendingTask, task.isLate, task.submittedDate))}
-                        {getStatusText(task.statusId, task.taskDeadline, task.isPendingTask, task.isLate, task.submittedDate)}
-                      </span>
-                    </div>
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                    >
+                      {getStatusIcon(getStatusText(task.statusId, task.taskDeadline, task.isPendingTask, task.isLate, task.submittedDate))}
+                      {getStatusText(task.statusId, task.taskDeadline, task.isPendingTask, task.isLate, task.submittedDate)}
+                    </span>
+                  </div>
 
                   {/* Description */}
                   {task.taskDescription && (
@@ -1722,8 +1730,8 @@ const ViewTasks = ({ teamIdFilter: initialTeamIdFilter = null, currentUserId = n
           <div style={{ backgroundColor: 'white', borderRadius: '12px', width: '100%', maxWidth: '500px', maxHeight: '90vh', overflow: 'auto', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px', borderBottom: '1px solid #e5e7eb' }}>
               <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '600', color: '#111827' }}>Add Feedback</h2>
-              <button 
-                onClick={() => setSelectedTask(null)} 
+              <button
+                onClick={() => setSelectedTask(null)}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '8px', borderRadius: '6px' }}
               >
                 <X size={20} style={{ color: '#6b7280' }} />
@@ -1781,10 +1789,10 @@ const ViewTasks = ({ teamIdFilter: initialTeamIdFilter = null, currentUserId = n
             </div>
           </div>
         </div>
-        )}
-      </div>
-    )
-  }
+      )}
+    </div>
+  )
+}
 
 export default ViewTasks
 
