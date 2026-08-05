@@ -339,7 +339,7 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
     const teamTasks = filterTasksForTeam(tasks, teamInfo)
     
     // Submissions for this team
-    const teamSubmissions = submissions.filter(s => s.teamId === team.id)
+    const teamSubmissions = submissions.filter(s => Number(s.teamId) === Number(team.id))
     
     // Count submitted + completed tasks
     const submittedCount = teamSubmissions.filter(s => {
@@ -349,9 +349,12 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
              s.statusId === STATUS_CONSTANTS.TASK_COMPLETED_LATE
     }).length
 
+    // Ensure total is at least as large as done submissions count, so percentage never exceeds 100% or divides by 0
+    const total = Math.max(teamTasks.length, submittedCount)
+
     return {
       done: submittedCount,
-      total: teamTasks.length
+      total: total
     }
   }
 
@@ -688,8 +691,8 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
           {filteredTeams.map((team) => {
             const stats = getTeamStats(team)
             const doneCount = stats.done
-            const totalCount = Math.max(stats.total, 1)
-            const pct = Math.round((doneCount / totalCount) * 100)
+            const totalCount = stats.total
+            const pct = totalCount > 0 ? Math.min(Math.round((doneCount / totalCount) * 100), 100) : 0
             const barColor = pct === 100 ? '#10b981' : pct > 0 ? '#ef4444' : '#cbd5e1'
 
             return (
