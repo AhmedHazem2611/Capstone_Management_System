@@ -574,15 +574,15 @@ const EngineersTasksPage = ({ currentUserId, user, setCurrentPage, setSelectedTa
                                                 <div
                                                     key={group.id}
                                                     style={{
-                                                        backgroundColor: '#ffffff',
+                                                        backgroundColor: allSubmitted ? '#f0fdf4' : '#ffffff',
                                                         borderRadius: '10px',
-                                                        padding: '12px 14px',
+                                                        padding: '14px',
                                                         marginBottom: '12px',
-                                                        border: '1px solid #e2e8f0',
+                                                        border: allSubmitted ? '1px solid #bbf7d0' : '1px solid #e2e8f0',
                                                         boxShadow: '0 2px 5px rgba(0,0,0,0.03)',
                                                         display: 'flex',
                                                         flexDirection: 'column',
-                                                        gap: '8px',
+                                                        gap: '10px',
                                                         boxSizing: 'border-box',
                                                         transition: 'all 0.2s ease-in-out'
                                                     }}
