@@ -1261,54 +1261,40 @@ const AdminTasksPage = ({ currentUserId = null, user = null, setCurrentPage, set
                           )
                         }
 
-                        // 2. Count how many teams completed their tasks for this week
-                        let completedTeamsCount = 0
-                        relevantTeams.forEach(team => {
-                          const teamIdNum = Number(team.id)
-                          const teamGradeId = team.gradeId != null ? Number(team.gradeId) : null
-                          const teamClassId = team.classId != null ? Number(team.classId) : null
+                        // 2. Collect all task IDs assigned to this week (matching grade filter if applied)
+                        const weekTasks = tasks.filter(t => {
+                          if (Number(t.weekId) !== Number(week.id)) return false
+                          if (filteredGradeName) {
+                            return (t.gradeName || "").toLowerCase().includes(filteredGradeName)
+                          }
+                          return true
+                        })
+                        const weekTaskIds = new Set(weekTasks.map(t => Number(t.id)))
 
-                          // Tasks assigned for this week that apply to this team
-                          const applicableTasks = tasks.filter(t => {
-                            if (Number(t.weekId) !== Number(week.id)) return false
-                            const tGradeId = t.gradeId != null ? Number(t.gradeId) : null
-                            const tClassId = t.classId != null ? Number(t.classId) : null
-                            const tTeamId = t.teamId != null ? Number(t.teamId) : null
-
-                            if (tTeamId && tTeamId === teamIdNum) return true
-                            if (tClassId && tClassId === teamClassId && !tTeamId) return true
-                            if (tGradeId && tGradeId === teamGradeId && !tClassId && !tTeamId) return true
-                            if (!tGradeId && !tClassId && !tTeamId) return true
-
-                            return submissions.some(s => Number(s.taskId) === Number(t.id) && Number(s.teamId) === teamIdNum)
-                          })
-
-                          if (applicableTasks.length > 0) {
-                            const applicableTaskIds = new Set(applicableTasks.map(t => Number(t.id)))
-                            const completedCount = submissions.filter(s => {
-                              if (Number(s.teamId) !== teamIdNum || !applicableTaskIds.has(Number(s.taskId))) return false
-                              const sId = Number(s.statusId)
-                              return sId === 10 || sId === 11 || sId === 12 || sId === 13
-                            }).length
-
-                            if (completedCount > 0) {
-                              completedTeamsCount++
-                            }
-                          } else {
-                            // If no specific applicable task in list, check if team has any submission for a task in this week
-                            const hasCompletedSubmission = submissions.some(s => {
-                              if (Number(s.teamId) !== teamIdNum) return false
+                        // 3. Find distinct team IDs that completed or submitted any task for this week
+                        const completedTeamIds = new Set(
+                          submissions
+                            .filter(s => {
                               const sId = Number(s.statusId)
                               const isDone = sId === 10 || sId === 11 || sId === 12 || sId === 13 || sId === STATUS_CONSTANTS.TASK_COMPLETED || sId === STATUS_CONSTANTS.TASK_COMPLETED_LATE || sId === STATUS_CONSTANTS.TASK_SUBMITTED_ON_TIME || sId === STATUS_CONSTANTS.TASK_SUBMITTED_LATE
                               if (!isDone) return false
 
-                              const task = tasks.find(t => Number(t.id) === Number(s.taskId))
-                              return task && Number(task.weekId) === Number(week.id)
-                            })
-                            if (hasCompletedSubmission) completedTeamsCount++
-                          }
-                        })
+                              const sTaskId = Number(s.taskId)
+                              if (weekTaskIds.has(sTaskId)) return true
 
+                              const matchingTask = tasks.find(t => Number(t.id) === sTaskId)
+                              if (matchingTask && Number(matchingTask.weekId) === Number(week.id)) {
+                                if (filteredGradeName) {
+                                  return (matchingTask.gradeName || "").toLowerCase().includes(filteredGradeName)
+                                }
+                                return true
+                              }
+                              return false
+                            })
+                            .map(s => Number(s.teamId))
+                        )
+
+                        const completedTeamsCount = relevantTeams.filter(team => completedTeamIds.has(Number(team.id))).length
                         const percentage = Math.round((completedTeamsCount / relevantTeams.length) * 100)
                         const barColor = percentage === 100 ? '#10b981' : percentage > 0 ? '#ef4444' : '#cbd5e1'
 
