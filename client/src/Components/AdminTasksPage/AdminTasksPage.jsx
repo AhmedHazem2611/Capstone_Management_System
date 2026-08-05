@@ -119,29 +119,16 @@ const AdminTasksPage = ({ currentUserId = null, user = null, setCurrentPage, set
         }
       }
 
-      // Fetch all data in parallel
-      // Note: Some endpoints may return 403 if user lacks permissions - handle gracefully
+      // Fetch all data in parallel gracefully handling any permission errors
       const [tasksRes, gradesRes, classesRes, teamsRes, capstoneLeadsRes, engineersRes, weeksRes, submissionsRes] = await Promise.all([
-        axiosInstance.get(`/AccountTask`),
-        axiosInstance.get(`/Grades`),
-        axiosInstance.get(`/Class`),
-        axiosInstance.get(teamsEndpoint.replace(API_BASE_URL, '')),
-        axiosInstance.get(`/Account/ByRoleName/CapstoneLead`).catch(err => {
-          if (err.response?.status === 403) {
-            console.warn('No permission to fetch Capstone Leads - continuing without this data')
-            return { data: [] }
-          }
-          throw err
-        }),
-        axiosInstance.get(`/Account/ByRoleName/Engineer`).catch(err => {
-          if (err.response?.status === 403) {
-            console.warn('No permission to fetch Engineers - continuing without this data')
-            return { data: [] }
-          }
-          throw err
-        }),
-        axiosInstance.get(`/Weeks?businessEntityName=CapstoneProject`), // Fetch Weeks
-        axiosInstance.get(`/TaskSubmissions`).catch(() => ({ data: [] }))
+        axiosInstance.get(`/AccountTask`).catch(err => { console.warn('AccountTask fetch error:', err); return { data: [] } }),
+        axiosInstance.get(`/Grades`).catch(err => { console.warn('Grades fetch error:', err); return { data: [] } }),
+        axiosInstance.get(`/Class`).catch(err => { console.warn('Class fetch error:', err); return { data: [] } }),
+        axiosInstance.get(teamsEndpoint.replace(API_BASE_URL, '')).catch(err => { console.warn('Teams fetch error:', err); return { data: [] } }),
+        axiosInstance.get(`/Account/ByRoleName/CapstoneLead`).catch(err => { return { data: [] } }),
+        axiosInstance.get(`/Account/ByRoleName/Engineer`).catch(err => { return { data: [] } }),
+        axiosInstance.get(`/Weeks?businessEntityName=CapstoneProject`).catch(err => { return { data: [] } }),
+        axiosInstance.get(`/TaskSubmissions`).catch(err => { return { data: [] } })
       ])
 
       // Process tasks
@@ -1301,19 +1288,19 @@ const AdminTasksPage = ({ currentUserId = null, user = null, setCurrentPage, set
                             const completedCount = submissions.filter(s => {
                               if (Number(s.teamId) !== teamIdNum || !applicableTaskIds.has(Number(s.taskId))) return false
                               const sId = Number(s.statusId)
-                              return sId === STATUS_CONSTANTS.TASK_COMPLETED || sId === STATUS_CONSTANTS.TASK_COMPLETED_LATE
+                              return sId === 10 || sId === 11 || sId === 12 || sId === 13
                             }).length
 
                             if (completedCount > 0) {
                               completedTeamsCount++
                             }
                           } else {
-                            // If no specific applicable task in list, check if team has any completed submission for a task in this week
+                            // If no specific applicable task in list, check if team has any submission for a task in this week
                             const hasCompletedSubmission = submissions.some(s => {
                               if (Number(s.teamId) !== teamIdNum) return false
                               const sId = Number(s.statusId)
-                              const isCompleted = sId === STATUS_CONSTANTS.TASK_COMPLETED || sId === STATUS_CONSTANTS.TASK_COMPLETED_LATE
-                              if (!isCompleted) return false
+                              const isDone = sId === 10 || sId === 11 || sId === 12 || sId === 13 || sId === STATUS_CONSTANTS.TASK_COMPLETED || sId === STATUS_CONSTANTS.TASK_COMPLETED_LATE || sId === STATUS_CONSTANTS.TASK_SUBMITTED_ON_TIME || sId === STATUS_CONSTANTS.TASK_SUBMITTED_LATE
+                              if (!isDone) return false
 
                               const task = tasks.find(t => Number(t.id) === Number(s.taskId))
                               return task && Number(task.weekId) === Number(week.id)
