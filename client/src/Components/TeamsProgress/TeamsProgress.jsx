@@ -329,6 +329,32 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
     setViewMode("grid")
   }
 
+  const getTeamStats = (team) => {
+    if (!team) return { done: 0, total: 0 }
+    const teamInfo = {
+      gradeId: team.gradeId,
+      classId: team.classId,
+      teamId: team.id
+    }
+    const teamTasks = filterTasksForTeam(tasks, teamInfo)
+    
+    // Submissions for this team
+    const teamSubmissions = submissions.filter(s => s.teamId === team.id)
+    
+    // Count submitted + completed tasks
+    const submittedCount = teamSubmissions.filter(s => {
+      return s.statusId === STATUS_CONSTANTS.TASK_SUBMITTED_ON_TIME ||
+             s.statusId === STATUS_CONSTANTS.TASK_SUBMITTED_LATE ||
+             s.statusId === STATUS_CONSTANTS.TASK_COMPLETED ||
+             s.statusId === STATUS_CONSTANTS.TASK_COMPLETED_LATE
+    }).length
+
+    return {
+      done: submittedCount,
+      total: teamTasks.length
+    }
+  }
+
   // Function to get time remaining until deadline (similar to PhasesSection)
   const getTimeRemaining = (deadlineString) => {
     if (!deadlineString) return null
@@ -659,28 +685,54 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
         </div>
 
         <div className="teams-progress-grid">
-          {filteredTeams.map((team) => (
-            <div key={team.id} className="teams-progress-card" onClick={() => selectTeam(team)}>
-              <div className="teams-progress-card-header">
-                <Building size={24} />
-                <h3>{team.name}</h3>
+          {filteredTeams.map((team) => {
+            const stats = getTeamStats(team)
+            const doneCount = stats.done
+            const totalCount = Math.max(stats.total, 1)
+            const pct = Math.round((doneCount / totalCount) * 100)
+            const barColor = pct === 100 ? '#10b981' : pct > 0 ? '#ef4444' : '#cbd5e1'
+
+            return (
+              <div key={team.id} className="teams-progress-card" onClick={() => selectTeam(team)}>
+                <div className="teams-progress-card-header">
+                  <Building size={24} />
+                  <h3>{team.name}</h3>
+                </div>
+                <div className="teams-progress-card-info">
+                  <p>
+                    <strong>Class:</strong> {team.className}
+                  </p>
+                  <p>
+                    <strong>Grade:</strong> {team.gradeName}
+                  </p>
+                </div>
+
+                {/* Progress Bar */}
+                <div className="team-progress-container" style={{ margin: '14px 0 10px 0', padding: '0 2px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '0.82rem', color: '#4b5563', fontWeight: '600' }}>
+                    <span>Overall Progress</span>
+                    <span style={{ color: barColor, fontWeight: '700' }}>{doneCount} / {stats.total} Tasks ({pct}%)</span>
+                  </div>
+                  <div style={{ width: '100%', height: '8px', backgroundColor: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
+                    <div style={{
+                      width: `${pct}%`,
+                      height: '100%',
+                      backgroundColor: barColor,
+                      borderRadius: '4px',
+                      transition: 'width 0.5s ease-in-out'
+                    }}></div>
+                  </div>
+                </div>
+
+                <div className="teams-progress-card-actions">
+                  <button className="teams-progress-view-grid-btn">
+                    <Grid size={16} />
+                    View Task Grid
+                  </button>
+                </div>
               </div>
-              <div className="teams-progress-card-info">
-                <p>
-                  <strong>Class:</strong> {team.className}
-                </p>
-                <p>
-                  <strong>Grade:</strong> {team.gradeName}
-                </p>
-              </div>
-              <div className="teams-progress-card-actions">
-                <button className="teams-progress-view-grid-btn">
-                  <Grid size={16} />
-                  View Task Grid
-                </button>
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
 
         {filteredTeams.length === 0 && (
