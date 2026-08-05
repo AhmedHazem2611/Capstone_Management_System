@@ -843,10 +843,16 @@ const TeamsProgress = ({ setCurrentPage, currentUserId = null, user = null }) =>
                 </div>
                 <div className="teams-progress-card-info">
                   <p>
-                    <strong>Class:</strong> {team.className}
+                    <strong>Class:</strong> {team.className || "N/A"}
                   </p>
                   <p>
-                    <strong>Grade:</strong> {team.gradeName}
+                    <strong>Grade:</strong> {team.gradeName || "N/A"}
+                  </p>
+                  <p>
+                    <strong>Engineers:</strong> {(() => {
+                      const engs = Array.from(new Set([...(team.engineers || []), team.supervisorName].filter(Boolean)))
+                      return engs.length > 0 ? engs.join(", ") : "Unassigned"
+                    })()}
                   </p>
                 </div>
 
