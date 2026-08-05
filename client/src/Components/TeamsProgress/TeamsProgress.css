@@ -30,6 +30,7 @@
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }
@@ -92,6 +93,7 @@
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -108,6 +110,7 @@
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -120,6 +123,7 @@
     opacity: 0;
     transform: translateY(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -516,7 +520,8 @@
   justify-content: center;
   min-width: 150px;
   min-height: 60px;
-  max-width: calc(100% / 8); /* Limit to 8 cells per row */
+  max-width: calc(100% / 8);
+  /* Limit to 8 cells per row */
 }
 
 .grid-cell:last-child {
@@ -597,9 +602,12 @@
 }
 
 @keyframes pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.7;
   }
@@ -641,45 +649,62 @@
   display: none;
 }
 
-.status-box.completed-on-time,
-.status-box.completed-late,
-.status-box.completed-very-late {
-  background: #10b981 !important; /* Clean Emerald Green for ALL completed tasks */
+.status-box.completed-on-time {
+  background: #16a34a !important;
+  /* Darker green for completed late */
+
 }
 
-.status-box.submitted,
-.status-box.submitted-late,
-.status-box.submitted-very-late {
-  background: #3b82f6 !important; /* Sky Blue for ALL submitted tasks */
+.status-box.completed-late {
+  background: linear-gradient(to right, #22c55e, #facc15) !important;
 }
 
-.status-box.pending,
-.status-box.not-completed-yet {
-  background: #64748b !important; /* Neutral Slate Gray for pending tasks */
+.status-box.submitted {
+  background: #16a34a60 !important;
+  /* Darker green for completed late */
+
 }
 
-.status-box.deadline-passed,
 .status-box.rejected {
-  background: #ef4444 !important; /* Rose Red ONLY for Overdue & Rejected tasks */
+  background: #ef4444 !important;
+  /* Red for rejected */
 }
 
-.status-box-label {
-  font-size: 12px;
-  font-weight: 700;
-  color: #ffffff !important;
+.status-box.submitted-late {
+  background: #facc15 !important;
+  /* Yellow for submitted (awaiting review) */
 }
 
-.late-tag {
-  display: inline-block;
-  background: rgba(255, 255, 255, 0.28);
-  color: #ffffff;
-  font-size: 9px;
-  font-weight: 700;
-  padding: 1px 5px;
-  border-radius: 4px;
-  margin-top: 3px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+.status-box.submitted-very-late {
+  background: #dc2626 !important;
+  /* Red for submitted very late (3+ days) */
+}
+
+.status-box.completed-very-late {
+  background: #dc2626 !important;
+  /* Red for completed very late (3+ days) */
+}
+
+.status-box.deadline-passed {
+  background: #dc2626 !important;
+  /* Dark red for deadline passed */
+}
+
+.status-box.pending {
+  background: #64748b !important;
+  /* Blue-gray for pending tasks */
+}
+
+.status-box.not-completed-yet {
+  background: #cbd5e1 !important;
+  /* Light gray for not started */
+}
+
+.status-box.completed-late .status-box-label,
+.status-box.submitted .status-box-label,
+.status-box.submitted-late .status-box-label,
+.status-box.not-completed-yet .status-box-label {
+  color: #0f172a;
 }
 
 .status-box.empty {
@@ -778,4 +803,128 @@
   .teams-progress-card-header h3 {
     font-size: 16px;
   }
+}
+
+/* ==========================================
+   Option 2: Modern Task Status Card Grid
+   ========================================== */
+.task-cards-container {
+  margin-top: 24px;
+}
+
+.task-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.task-status-card {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.task-status-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+  border-color: #cbd5e1;
+}
+
+.task-status-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.task-card-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+  line-height: 1.35;
+}
+
+.task-badge-group {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.task-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: capitalize;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.badge-completed {
+  background: #ecfdf5;
+  color: #059669;
+  border: 1px solid #a7f3d0;
+}
+
+.badge-submitted {
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+}
+
+.badge-pending {
+  background: #f8fafc;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
+
+.badge-overdue,
+.badge-rejected {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.badge-late {
+  background: #fffbe6;
+  color: #d97706;
+  border: 1px solid #fef08a;
+}
+
+.task-status-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.task-card-date-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #64748b;
+  border-top: 1px border #f1f5f9;
+  padding-top: 8px;
+}
+
+.date-label {
+  font-weight: 600;
+}
+
+.date-value {
+  font-weight: 500;
+  color: #334155;
 }
