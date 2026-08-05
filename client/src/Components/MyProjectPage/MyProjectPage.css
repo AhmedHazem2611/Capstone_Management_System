@@ -198,16 +198,99 @@
 
 .right-column { display: flex; flex-direction: column; gap: 16px; }
 
-.preview-title, .tips-title { margin: 0 0 10px 0; font-size: 16px; color: #2d3748; }
-.preview-item { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px dashed #e2e8f0; }
-.preview-item:last-child { border-bottom: none; }
-.preview-label { color: #718096; font-size: 13px; }
-.preview-value { color: #2d3748; font-weight: 600; overflow-wrap: anywhere; word-break: break-word; }
-.preview-item.multiline { flex-direction: column; align-items: flex-start; }
-.preview-paragraph { margin: 4px 0 0 0; color: #2d3748; white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; }
+/* Team Members & Staff Section */
+.section-title {
+  margin: 0 0 12px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #2d3748;
+  font-size: 16px;
+  font-weight: 700;
+}
 
-.tips-list { margin: 0; padding-left: 18px; color: #4a5568; }
-.tips-list li { margin-bottom: 6px; }
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.empty {
+  color: #a0aec0;
+  font-size: 14px;
+}
+
+.list-item {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border: 1px dashed #edf2f7;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.list-item.small {
+  padding: 8px;
+}
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #e53e3e;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.avatar.small {
+  width: 28px;
+  height: 28px;
+  font-size: 12px;
+}
+
+.item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.name {
+  font-weight: 600;
+  color: #2d3748;
+  font-size: 14px;
+}
+
+.secondary {
+  color: #718096;
+  font-size: 13px;
+}
+
+.tertiary {
+  color: #a0aec0;
+  font-size: 12px;
+}
+
+.badge {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 700;
+}
 
 .loading {
   padding: 20px;

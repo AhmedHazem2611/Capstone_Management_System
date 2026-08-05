@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
-import { AlertTriangle } from "lucide-react"
+import { AlertTriangle, Users, FileText, ShieldCheck } from "lucide-react"
 import { axiosInstance } from "../../utils/authService"
 import toast from "react-hot-toast"
 import "./MyProjectPage.css"
@@ -8,6 +8,9 @@ const MyProjectPage = ({ user }) => {
   const [loading, setLoading] = useState(true)
   const [isLeader, setIsLeader] = useState(false)
   const [team, setTeam] = useState(null)
+  const [members, setMembers] = useState([])
+  const [engineers, setEngineers] = useState([])
+  const [supervisors, setSupervisors] = useState([])
   const [form, setForm] = useState({
     nameEn: "",
     nameAr: "",
@@ -36,6 +39,60 @@ const MyProjectPage = ({ user }) => {
     }
   }
 
+  const fetchTeamMembersAndStaff = async (normalizedTeam) => {
+    if (!normalizedTeam?.id) return
+    try {
+      // 1. Members
+      const tmRes = await axiosInstance.get(`/TeamMembers`)
+      const tmList = tmRes.data?.$values || tmRes.data || []
+      const filteredMembers = (Array.isArray(tmList) ? tmList : [])
+        .filter((m) => (m.teamId ?? m.TeamId) === normalizedTeam.id)
+        .map((m) => ({
+          id: m.teamMemberAccountId ?? m.TeamMemberAccountId,
+          fullName: m.memberName ?? m.MemberName ?? "Member",
+          email: m.memberEmail ?? m.MemberEmail ?? "",
+          role: m.teamMemberDescription ?? m.TeamMemberDescription ?? "Team Member",
+        }))
+      setMembers(filteredMembers)
+
+      // 2. Engineers (by class)
+      if (normalizedTeam.classId) {
+        try {
+          const revRes = await axiosInstance.get(`/Account/Reviewers/ByClass/${normalizedTeam.classId}`)
+          const rData = revRes.data
+          const rList = Array.isArray(rData) ? rData : rData?.$values || []
+          const mappedEngs = rList.map((r) => ({
+            id: r.accountId || r.AccountId,
+            fullName: r.fullNameEn || r.fullNameAr || "Engineer",
+            email: r.email || r.Email || "",
+            role: "Engineer",
+          }))
+          setEngineers(mappedEngs)
+        } catch {
+          setEngineers([])
+        }
+      }
+
+      // 3. Capstone supervisors
+      try {
+        const csRes = await axiosInstance.get(`/Account/CapstoneSupervisors`)
+        const csData = csRes.data
+        const csList = Array.isArray(csData) ? csData : csData?.$values || []
+        const mappedSupervisors = csList.map((s) => ({
+          id: s.accountId || s.AccountId,
+          fullName: s.fullNameEn || s.fullNameAr || "Supervisor",
+          email: s.email || s.Email || "",
+          role: "Capstone Supervisor",
+        }))
+        setSupervisors(mappedSupervisors)
+      } catch {
+        setSupervisors([])
+      }
+    } catch (err) {
+      console.error("MyProjectPage - Error fetching team members and staff:", err)
+    }
+  }
+
   const fetchData = async () => {
     try {
       setLoading(true)
@@ -45,7 +102,6 @@ const MyProjectPage = ({ user }) => {
         return
       }
 
-      // Try to get team by leader. If found => user is leader
       let teamRes = null
       try {
         const res = await axiosInstance.get(`/Teams/ByLeader/${currentUserId}`)
@@ -54,29 +110,43 @@ const MyProjectPage = ({ user }) => {
         teamRes = null
       }
 
+      let teamObj = null
       if (teamRes && teamRes.id) {
         setIsLeader(true)
-        setTeam(teamRes)
-        await fetchProjectFromServer()
-        setLoading(false)
-        return
+        teamObj = {
+          id: teamRes.id || teamRes.Id,
+          teamName: teamRes.teamName || teamRes.TeamName || "My Team",
+          classId: teamRes.classId || teamRes.ClassId || null,
+          teamLeaderAccountId: teamRes.teamLeaderAccountId || teamRes.TeamLeaderAccountId || currentUserId,
+        }
+      } else {
+        const membersResp = await axiosInstance.get(`/TeamMembers`)
+        const membersList = membersResp.data?.$values || membersResp.data || []
+        const myMembership = membersList.find((m) => m.teamMemberAccountId === currentUserId)
+        if (myMembership && myMembership.teamId) {
+          try {
+            const t = await axiosInstance.get(`/Teams/${myMembership.teamId}`)
+            const tData = t.data || {}
+            teamObj = {
+              id: tData.Id || tData.id || myMembership.teamId,
+              teamName: tData.TeamName || tData.teamName || myMembership.TeamName || "My Team",
+              classId: tData.ClassId || tData.classId || null,
+              teamLeaderAccountId: tData.TeamLeaderAccountId || tData.teamLeaderAccountId || null,
+            }
+          } catch {
+            teamObj = { id: myMembership.teamId, teamName: myMembership.TeamName || "My Team" }
+          }
+        }
+        setIsLeader(false)
       }
 
-      // Not a leader: find team via membership
-      const membersResp = await axiosInstance.get(`/TeamMembers`)
-      const members = membersResp.data?.$values || membersResp.data || []
-      const myMembership = members.find((m) => m.teamMemberAccountId === currentUserId)
-      if (myMembership && myMembership.teamId) {
-        // Fetch team details to show name
-        try {
-          const t = await axiosInstance.get(`/Teams/${myMembership.teamId}`)
-          setTeam({ id: t.data?.Id || myMembership.teamId, teamName: t.data?.TeamName || myMembership.TeamName || "My Team" })
-        } catch {
-          setTeam({ id: myMembership.teamId, teamName: myMembership.TeamName || "My Team" })
-        }
+      setTeam(teamObj)
+
+      if (teamObj && teamObj.id) {
         await fetchProjectFromServer()
+        await fetchTeamMembersAndStaff(teamObj)
       }
-      setIsLeader(false)
+
       setLoading(false)
     } catch (err) {
       console.error("MyProjectPage fetch error:", err)
@@ -142,7 +212,6 @@ const MyProjectPage = ({ user }) => {
     )
   }
 
-  // If student doesn't have a team, show same alert and hide rest of page (like PhasesSection)
   if (!team) {
     return (
       <div className="my-project-page">
@@ -217,8 +286,6 @@ const MyProjectPage = ({ user }) => {
             </div>
           </div>
 
-          
-
           <div className="section-header">
             <h3>Details</h3>
             <p>Summarize the scope, objectives, and technologies.</p>
@@ -263,14 +330,69 @@ const MyProjectPage = ({ user }) => {
         </div>
 
         <div className="right-column">
-          <div className="card tips-card">
-            <h3 className="tips-title">Tips</h3>
-            <ul className="tips-list">
-              <li>Use clear, concise titles that reflect your project scope.</li>
-              <li>Describe key objectives, stakeholders, and technologies used.</li>
-              <li>Add link to prototype, or any documentation in Additional Information.</li>
-            </ul>
+          {/* Members Card */}
+          <div className="card">
+            <h3 className="section-title"><Users size={18} /> Members</h3>
+            <div className="list">
+              {members.length === 0 ? (
+                <div className="empty">No members found</div>
+              ) : (
+                members.map((m) => (
+                  <div key={m.id} className="list-item">
+                    <div className="avatar">{(m.fullName || "M").charAt(0)}</div>
+                    <div className="item-info">
+                      <div className="name-row">
+                        <span className="name">{m.fullName}</span>
+                        {m.id === team?.teamLeaderAccountId && <span className="badge">Leader</span>}
+                      </div>
+                      <span className="secondary">{m.role || "Team Member"}</span>
+                      {m.email && <span className="tertiary">{m.email}</span>}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
+
+          {/* Engineers Card */}
+          <div className="card">
+            <h3 className="section-title"><FileText size={18} /> Engineers</h3>
+            <div className="list">
+              {engineers.length === 0 ? (
+                <div className="empty">No engineers assigned</div>
+              ) : (
+                engineers.map((r) => (
+                  <div key={r.id} className="list-item small">
+                    <div className="avatar small">{(r.fullName || "E").charAt(0)}</div>
+                    <div className="item-info">
+                      <span className="name">{r.fullName}</span>
+                      <span className="secondary">{r.role}</span>
+                      {r.email && <span className="tertiary">{r.email}</span>}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Supervisors Card */}
+          {supervisors.length > 0 && (
+            <div className="card">
+              <h3 className="section-title"><ShieldCheck size={18} /> Supervisors</h3>
+              <div className="list">
+                {supervisors.map((s) => (
+                  <div key={s.id} className="list-item small">
+                    <div className="avatar small">{(s.fullName || "S").charAt(0)}</div>
+                    <div className="item-info">
+                      <span className="name">{s.fullName}</span>
+                      <span className="secondary">{s.role}</span>
+                      {s.email && <span className="tertiary">{s.email}</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -278,5 +400,3 @@ const MyProjectPage = ({ user }) => {
 }
 
 export default MyProjectPage
-
-
