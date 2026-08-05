@@ -571,43 +571,165 @@ const EngineersTasksPage = ({ currentUserId, user, setCurrentPage, setSelectedTa
                                             const someSubmitted = submittedCount > 0
 
                                             return (
-                                                <div key={group.id} className="admin-tasks-week-task-item"
-                                                    style={allSubmitted ? {
-                                                        borderLeft: '4px solid #10b981',
-                                                        backgroundColor: '#f0fdf4'
-                                                    } : {}}>
-                                                    <div className="admin-tasks-week-task-content">
-                                                        <div className="admin-tasks-week-task-header">
-                                                            <h4 className="admin-tasks-week-task-title">{group.taskName}</h4>
+                                                <div
+                                                    key={group.id}
+                                                    style={{
+                                                        backgroundColor: allSubmitted ? '#f0fdf4' : '#ffffff',
+                                                        borderRadius: '10px',
+                                                        padding: '14px',
+                                                        marginBottom: '12px',
+                                                        border: allSubmitted ? '1.5px solid #bbf7d0' : '1px solid #e2e8f0',
+                                                        boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
+                                                        display: 'flex',
+                                                        flexDirection: 'column',
+                                                        gap: '10px',
+                                                        transition: 'all 0.2s ease-in-out'
+                                                    }}
+                                                >
+                                                    {/* Top Row: Title + Submission Status Pill */}
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                                                        <h4 style={{
+                                                            fontSize: '13.5px',
+                                                            fontWeight: '700',
+                                                            color: '#1e293b',
+                                                            lineHeight: '1.35',
+                                                            margin: 0,
+                                                            flex: 1
+                                                        }}>
+                                                            {group.taskName}
+                                                        </h4>
+
+                                                        {someSubmitted && (
+                                                            <span style={{
+                                                                backgroundColor: allSubmitted ? '#dcfce7' : '#fef3c7',
+                                                                color: allSubmitted ? '#15803d' : '#92400e',
+                                                                fontSize: '10.5px',
+                                                                fontWeight: '700',
+                                                                padding: '3px 8px',
+                                                                borderRadius: '6px',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                gap: '4px',
+                                                                whiteSpace: 'nowrap'
+                                                            }}>
+                                                                <CheckCircle size={12} />
+                                                                <span>{submittedCount}/{totalCount} Submitted</span>
+                                                            </span>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Task Description */}
+                                                    {group.taskDescription && (
+                                                        <p style={{
+                                                            fontSize: '12px',
+                                                            color: '#64748b',
+                                                            lineHeight: '1.4',
+                                                            margin: 0
+                                                        }}>
+                                                            {group.taskDescription.length > 100
+                                                                ? `${group.taskDescription.substring(0, 100)}...`
+                                                                : group.taskDescription
+                                                            }
+                                                        </p>
+                                                    )}
+
+                                                    {/* Metadata Row: User Count & Deadline Date */}
+                                                    <div style={{
+                                                        display: 'flex',
+                                                        justify: 'space-between',
+                                                        alignItems: 'center',
+                                                        paddingTop: '8px',
+                                                        borderTop: '1px solid #f1f5f9',
+                                                        fontSize: '11px'
+                                                    }}>
+                                                        <div style={{
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: '5px',
+                                                            backgroundColor: allSubmitted ? '#e8f5e9' : '#f1f5f9',
+                                                            color: '#475569',
+                                                            fontWeight: '600',
+                                                            padding: '3px 8px',
+                                                            borderRadius: '6px'
+                                                        }}>
+                                                            <User size={13} style={{ color: '#64748b' }} />
+                                                            <span>Assigned to {totalCount} {totalCount === 1 ? 'user' : 'users'}</span>
                                                         </div>
 
-                                                        <div className="admin-tasks-week-task-meta">
-                                                            <div className="admin-tasks-week-task-grade">
-                                                                <User size={14} /> Assigned to {totalCount} users
-                                                            </div>
-                                                            <div className="admin-tasks-week-task-deadline">
-                                                                <Calendar size={14} /> {formatDate(group.taskDeadline)}
-                                                            </div>
-                                                            {someSubmitted && (
-                                                                <div style={{ color: allSubmitted ? '#059669' : '#d97706', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                                                                    <CheckCircle size={12} /> {submittedCount}/{totalCount} Submitted
-                                                                </div>
-                                                            )}
+                                                        <div style={{
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: '5px',
+                                                            color: '#64748b',
+                                                            fontWeight: '500'
+                                                        }}>
+                                                            <Calendar size={13} style={{ color: '#94a3b8' }} />
+                                                            <span>{formatDate(group.taskDeadline)}</span>
                                                         </div>
                                                     </div>
-                                                    <div className="admin-tasks-week-task-actions">
-                                                        <button onClick={() => handleViewDetails(group)} className="admin-tasks-task-action-btn admin-tasks-edit-btn" style={{
-                                                            backgroundColor: allSubmitted ? '#10b981' : 'white',
-                                                            color: allSubmitted ? 'white' : '#3182ce',
-                                                            borderColor: allSubmitted ? '#059669' : '#e2e8f0'
-                                                        }}>
-                                                            <BookOpen size={16} /> <span>Details</span>
+
+                                                    {/* Action Buttons Row */}
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
+                                                        <button
+                                                            onClick={() => handleViewDetails(group)}
+                                                            title="View Details & Submissions"
+                                                            style={{
+                                                                padding: '6px 14px',
+                                                                backgroundColor: allSubmitted ? '#10b981' : '#3b82f6',
+                                                                color: 'white',
+                                                                border: 'none',
+                                                                borderRadius: '6px',
+                                                                cursor: 'pointer',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                gap: '5px',
+                                                                fontSize: '11.5px',
+                                                                fontWeight: '600',
+                                                                transition: 'opacity 0.2s'
+                                                            }}
+                                                        >
+                                                            <BookOpen size={14} />
+                                                            <span>Details</span>
                                                         </button>
-                                                        <button onClick={() => handleEditGroup(group)} className="admin-tasks-task-action-btn admin-tasks-edit-btn">
-                                                            <Edit2 size={16} />
+
+                                                        <button
+                                                            onClick={() => handleEditGroup(group)}
+                                                            title="Edit Assignment"
+                                                            style={{
+                                                                width: '32px',
+                                                                height: '32px',
+                                                                borderRadius: '6px',
+                                                                border: '1px solid #dbeafe',
+                                                                backgroundColor: '#eff6ff',
+                                                                color: '#2563eb',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                cursor: 'pointer',
+                                                                transition: 'all 0.15s ease'
+                                                            }}
+                                                        >
+                                                            <Edit2 size={15} />
                                                         </button>
-                                                        <button onClick={() => handleDeleteGroup(group)} className="admin-tasks-task-action-btn admin-tasks-delete-btn">
-                                                            <Trash2 size={16} />
+
+                                                        <button
+                                                            onClick={() => handleDeleteGroup(group)}
+                                                            title="Delete Assignment"
+                                                            style={{
+                                                                width: '32px',
+                                                                height: '32px',
+                                                                borderRadius: '6px',
+                                                                border: '1px solid #fee2e2',
+                                                                backgroundColor: '#fef2f2',
+                                                                color: '#dc2626',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                cursor: 'pointer',
+                                                                transition: 'all 0.15s ease'
+                                                            }}
+                                                        >
+                                                            <Trash2 size={15} />
                                                         </button>
                                                     </div>
                                                 </div>
