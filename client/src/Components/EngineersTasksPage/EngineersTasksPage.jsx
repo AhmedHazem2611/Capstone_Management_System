@@ -571,169 +571,44 @@ const EngineersTasksPage = ({ currentUserId, user, setCurrentPage, setSelectedTa
                                             const someSubmitted = submittedCount > 0
 
                                             return (
-                                                <div
-                                                    key={group.id}
-                                                    style={{
-                                                        backgroundColor: allSubmitted ? '#f0fdf4' : '#ffffff',
-                                                        borderRadius: '10px',
-                                                        padding: '14px 14px 10px 14px',
-                                                        marginBottom: '12px',
-                                                        border: allSubmitted ? '1px solid #bbf7d0' : '1px solid #e2e8f0',
-                                                        borderLeft: allSubmitted ? '4px solid #10b981' : '4px solid #3b82f6',
-                                                        boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
-                                                        display: 'flex',
-                                                        flexDirection: 'column',
-                                                        gap: '8px',
-                                                        transition: 'all 0.2s ease-in-out'
-                                                    }}
-                                                >
-                                                    {/* Top Bar: Full-Width Title + Action Buttons */}
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
-                                                        <h4 style={{
-                                                            fontSize: '13px',
-                                                            fontWeight: '700',
-                                                            color: '#1e293b',
-                                                            lineHeight: '1.35',
-                                                            margin: 0,
-                                                            flex: 1
-                                                        }}>
-                                                            {group.taskName}
-                                                        </h4>
-
-                                                        {/* Action Buttons (Details + Edit/Delete Icons) */}
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                            <button
-                                                                onClick={() => handleViewDetails(group)}
-                                                                title="View Details"
-                                                                style={{
-                                                                    padding: '4px 10px',
-                                                                    backgroundColor: allSubmitted ? '#10b981' : '#3b82f6',
-                                                                    color: 'white',
-                                                                    border: 'none',
-                                                                    borderRadius: '6px',
-                                                                    cursor: 'pointer',
-                                                                    display: 'flex',
-                                                                    alignItems: 'center',
-                                                                    gap: '4px',
-                                                                    fontSize: '11px',
-                                                                    fontWeight: '600'
-                                                                }}
-                                                            >
-                                                                <BookOpen size={13} />
-                                                                <span>Details</span>
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleEditGroup(group)}
-                                                                title="Edit Task"
-                                                                style={{
-                                                                    width: '28px',
-                                                                    height: '28px',
-                                                                    borderRadius: '6px',
-                                                                    border: '1px solid #dbeafe',
-                                                                    backgroundColor: '#eff6ff',
-                                                                    color: '#2563eb',
-                                                                    display: 'flex',
-                                                                    alignItems: 'center',
-                                                                    justifyContent: 'center',
-                                                                    cursor: 'pointer',
-                                                                    transition: 'all 0.15s ease'
-                                                                }}
-                                                            >
-                                                                <Edit2 size={14} />
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleDeleteGroup(group)}
-                                                                title="Delete Task"
-                                                                style={{
-                                                                    width: '28px',
-                                                                    height: '28px',
-                                                                    borderRadius: '6px',
-                                                                    border: '1px solid #fee2e2',
-                                                                    backgroundColor: '#fef2f2',
-                                                                    color: '#dc2626',
-                                                                    display: 'flex',
-                                                                    alignItems: 'center',
-                                                                    justifyContent: 'center',
-                                                                    cursor: 'pointer',
-                                                                    transition: 'all 0.15s ease'
-                                                                }}
-                                                            >
-                                                                <Trash2 size={14} />
-                                                            </button>
+                                                <div key={group.id} className="admin-tasks-week-task-item"
+                                                    style={allSubmitted ? {
+                                                        borderLeft: '4px solid #10b981',
+                                                        backgroundColor: '#f0fdf4'
+                                                    } : {}}>
+                                                    <div className="admin-tasks-week-task-content">
+                                                        <div className="admin-tasks-week-task-header">
+                                                            <h4 className="admin-tasks-week-task-title">{group.taskName}</h4>
                                                         </div>
-                                                    </div>
 
-                                                    {/* Task Description */}
-                                                    {group.taskDescription && (
-                                                        <p style={{
-                                                            fontSize: '11.5px',
-                                                            color: '#64748b',
-                                                            lineHeight: '1.4',
-                                                            margin: 0
-                                                        }}>
-                                                            {group.taskDescription.length > 95
-                                                                ? `${group.taskDescription.substring(0, 95)}...`
-                                                                : group.taskDescription
-                                                            }
-                                                        </p>
-                                                    )}
-
-                                                    {/* Card Meta Footer */}
-                                                    <div style={{
-                                                        display: 'flex',
-                                                        justify: 'space-between',
-                                                        alignItems: 'center',
-                                                        marginTop: '4px',
-                                                        paddingTop: '8px',
-                                                        borderTop: '1px solid #f1f5f9'
-                                                    }}>
-                                                        {/* User Count & Submission Status Badges */}
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                                                            <span style={{
-                                                                backgroundColor: '#f1f5f9',
-                                                                color: '#475569',
-                                                                fontSize: '10.5px',
-                                                                fontWeight: '600',
-                                                                padding: '2px 8px',
-                                                                borderRadius: '6px',
-                                                                display: 'flex',
-                                                                alignItems: 'center',
-                                                                gap: '4px'
-                                                            }}>
-                                                                <User size={12} />
-                                                                <span>Assigned to {totalCount} users</span>
-                                                            </span>
-
+                                                        <div className="admin-tasks-week-task-meta">
+                                                            <div className="admin-tasks-week-task-grade">
+                                                                <User size={14} /> Assigned to {totalCount} users
+                                                            </div>
+                                                            <div className="admin-tasks-week-task-deadline">
+                                                                <Calendar size={14} /> {formatDate(group.taskDeadline)}
+                                                            </div>
                                                             {someSubmitted && (
-                                                                <span style={{
-                                                                    backgroundColor: allSubmitted ? '#dcfce7' : '#fef3c7',
-                                                                    color: allSubmitted ? '#166534' : '#92400e',
-                                                                    fontSize: '10.5px',
-                                                                    fontWeight: '700',
-                                                                    padding: '2px 8px',
-                                                                    borderRadius: '6px',
-                                                                    display: 'flex',
-                                                                    alignItems: 'center',
-                                                                    gap: '4px'
-                                                                }}>
-                                                                    <CheckCircle size={12} />
-                                                                    <span>{submittedCount}/{totalCount} Submitted</span>
-                                                                </span>
+                                                                <div style={{ color: allSubmitted ? '#059669' : '#d97706', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                                                                    <CheckCircle size={12} /> {submittedCount}/{totalCount} Submitted
+                                                                </div>
                                                             )}
                                                         </div>
-
-                                                        {/* Deadline Date */}
-                                                        <div style={{
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            gap: '4px',
-                                                            fontSize: '10.5px',
-                                                            color: '#64748b',
-                                                            fontWeight: '500'
+                                                    </div>
+                                                    <div className="admin-tasks-week-task-actions">
+                                                        <button onClick={() => handleViewDetails(group)} className="admin-tasks-task-action-btn admin-tasks-edit-btn" style={{
+                                                            backgroundColor: allSubmitted ? '#10b981' : 'white',
+                                                            color: allSubmitted ? 'white' : '#3182ce',
+                                                            borderColor: allSubmitted ? '#059669' : '#e2e8f0'
                                                         }}>
-                                                            <Calendar size={12} style={{ color: '#94a3b8' }} />
-                                                            <span>{formatDate(group.taskDeadline)}</span>
-                                                        </div>
+                                                            <BookOpen size={16} /> <span>Details</span>
+                                                        </button>
+                                                        <button onClick={() => handleEditGroup(group)} className="admin-tasks-task-action-btn admin-tasks-edit-btn">
+                                                            <Edit2 size={16} />
+                                                        </button>
+                                                        <button onClick={() => handleDeleteGroup(group)} className="admin-tasks-task-action-btn admin-tasks-delete-btn">
+                                                            <Trash2 size={16} />
+                                                        </button>
                                                     </div>
                                                 </div>
                                             )

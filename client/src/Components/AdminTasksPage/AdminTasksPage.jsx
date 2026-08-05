@@ -458,7 +458,7 @@ const AdminTasksPage = ({ currentUserId = null, user = null, setCurrentPage, set
     filteredTasks = filteredTasks.filter(task => {
       // Filter out tasks assigned explicitly to staff members
       if (task.assignedToId && staffIds.has(String(task.assignedToId))) return false;
-      
+
       // Filter out generic staff tasks (no grade, no team, no class, no assignee)
       // These are meant for Capstone Leads or Engineers in their respective pages.
       const isGenericStaffTask = !task.gradeId && !task.teamId && !task.classId && !task.assignedToId;
@@ -510,9 +510,9 @@ const AdminTasksPage = ({ currentUserId = null, user = null, setCurrentPage, set
         setSubmitting(false)
         return
       }
-      
+
       const gradeId = selectedGrades.length === 1 ? selectedGrades[0] : (formData.gradeId ? Number(formData.gradeId) : null)
-      
+
       if (!gradeId) {
         showError("Please select a grade")
         setSubmitting(false)
@@ -551,8 +551,8 @@ const AdminTasksPage = ({ currentUserId = null, user = null, setCurrentPage, set
       return
     }
 
-      // For engineers/reviewers: use the pre-selected grade/class when creating for a team,
-      // otherwise fall back to the engineer's assigned class
+    // For engineers/reviewers: use the pre-selected grade/class when creating for a team,
+    // otherwise fall back to the engineer's assigned class
     if (isEngineer(user) || isReviewer(user)) {
       console.log("AdminTasksPage - Engineer path reached, editingTask:", editingTask)
 
@@ -974,7 +974,7 @@ const AdminTasksPage = ({ currentUserId = null, user = null, setCurrentPage, set
                   <div className="text-sm text-blue-800">
                     <p className="font-medium">Your Assigned Class:</p>
                     <p className="mt-1">
-                      {assignedClasses.length > 0 
+                      {assignedClasses.length > 0
                         ? `${assignedClasses[0].className} (${assignedClasses[0].gradeName})`
                         : "No class assigned"
                       }
@@ -1010,7 +1010,7 @@ const AdminTasksPage = ({ currentUserId = null, user = null, setCurrentPage, set
                       {editingTask && <span className="text-gray-400 font-normal ml-2">(Select grade for editing)</span>}
                       {!editingTask && <span className="text-gray-400 font-normal ml-2">(Select one or more grades)</span>}
                     </label>
-                    
+
                     {editingTask ? (
                       <select
                         name="gradeId"
@@ -1046,9 +1046,8 @@ const AdminTasksPage = ({ currentUserId = null, user = null, setCurrentPage, set
                           {getAvailableGrades().map((grade) => (
                             <label
                               key={grade.id}
-                              className={`flex items-center gap-2 p-2 rounded-md cursor-pointer transition-colors ${
-                                selectedGrades.includes(grade.id) ? 'bg-blue-50 border border-blue-300' : 'bg-white hover:bg-gray-50 border border-gray-200'
-                              }`}
+                              className={`flex items-center gap-2 p-2 rounded-md cursor-pointer transition-colors ${selectedGrades.includes(grade.id) ? 'bg-blue-50 border border-blue-300' : 'bg-white hover:bg-gray-50 border border-gray-200'
+                                }`}
                             >
                               <input
                                 type="checkbox"
@@ -1083,11 +1082,11 @@ const AdminTasksPage = ({ currentUserId = null, user = null, setCurrentPage, set
                       >
                         <option value="">Select a class (optional)</option>
                         {(selectedGrades.length === 1 ? getClassesForGrade(selectedGrades[0]) : (formData.gradeId ? getClassesForGrade(formData.gradeId) : []))
-                        .map((cls) => (
-                          <option key={cls.id} value={cls.id}>
-                            {cls.className}
-                          </option>
-                        ))}
+                          .map((cls) => (
+                            <option key={cls.id} value={cls.id}>
+                              {cls.className}
+                            </option>
+                          ))}
                       </select>
                     </div>
                   )}
