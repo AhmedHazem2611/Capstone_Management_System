@@ -28,6 +28,7 @@ const AdminTasksPage = ({ currentUserId = null, user = null, setCurrentPage, set
   const [classes, setClasses] = useState([])
   const [teams, setTeams] = useState([])
   const [weeks, setWeeks] = useState([]) // State for Weeks
+  const [submissions, setSubmissions] = useState([]) // State for Submissions
   const [assignedClasses, setAssignedClasses] = useState([])
   const [capstoneLeads, setCapstoneLeads] = useState([]) // State for Capstone Leads
   const [engineers, setEngineers] = useState([]) // State for Engineers
@@ -120,7 +121,7 @@ const AdminTasksPage = ({ currentUserId = null, user = null, setCurrentPage, set
 
       // Fetch all data in parallel
       // Note: Some endpoints may return 403 if user lacks permissions - handle gracefully
-      const [tasksRes, gradesRes, classesRes, teamsRes, capstoneLeadsRes, engineersRes, weeksRes] = await Promise.all([
+      const [tasksRes, gradesRes, classesRes, teamsRes, capstoneLeadsRes, engineersRes, weeksRes, submissionsRes] = await Promise.all([
         axiosInstance.get(`/AccountTask`),
         axiosInstance.get(`/Grades`),
         axiosInstance.get(`/Class`),
@@ -139,7 +140,8 @@ const AdminTasksPage = ({ currentUserId = null, user = null, setCurrentPage, set
           }
           throw err
         }),
-        axiosInstance.get(`/Weeks?businessEntityName=CapstoneProject`) // Fetch Weeks
+        axiosInstance.get(`/Weeks?businessEntityName=CapstoneProject`), // Fetch Weeks
+        axiosInstance.get(`/TaskSubmissions`).catch(() => ({ data: [] }))
       ])
 
       // Process tasks
@@ -199,6 +201,16 @@ const AdminTasksPage = ({ currentUserId = null, user = null, setCurrentPage, set
         teamLeaderName: t.teamLeaderName ?? t.TeamLeaderName,
       }))
 
+      // Process submissions
+      const submissionsRaw = submissionsRes?.data
+      const submissionsList = Array.isArray(submissionsRaw) ? submissionsRaw : submissionsRaw?.$values ? submissionsRaw.$values : []
+      const normalizedSubmissions = submissionsList.map((s) => ({
+        id: s.taskSubmissionId ?? s.TaskSubmissionId ?? s.id,
+        taskId: Number(s.taskId ?? s.TaskId),
+        teamId: Number(s.teamId ?? s.TeamId),
+        statusId: Number(s.statusId ?? s.StatusId),
+      }))
+
       let assignedClasses = []
       if ((isEngineer(user) || isReviewer(user)) && currentUserId) {
         // For engineers and reviewers, get assigned classes from teams data
@@ -254,6 +266,10 @@ const AdminTasksPage = ({ currentUserId = null, user = null, setCurrentPage, set
       setClasses(normalizedClasses)
       setTeams(normalizedTeams)
       setAssignedClasses(assignedClasses)
+      setCapstoneLeads(capstoneLeadsList)
+      setEngineers(engineersList)
+      setWeeks(normalizedWeeks)
+      setSubmissions(normalizedSubmissions)
     } catch (err) {
       if (isDevelopment() === 'development') {
         console.error("Error loading data:", err)
@@ -1240,6 +1256,83 @@ const AdminTasksPage = ({ currentUserId = null, user = null, setCurrentPage, set
                       <div className="admin-tasks-week-dates">
                         {format(parseISO(week.startDate), 'MMM dd')} - {format(parseISO(week.endDate), 'MMM dd, yyyy')}
                       </div>
+
+                      {/* Weekly Team Completion Progress Bar */}
+                      {(() => {
+                        // 1. Filter teams based on selectedGradeFilter
+                        const filteredGradeName = String(selectedGradeFilter || "").trim().toLowerCase()
+                        const relevantTeams = teams.filter(team => {
+                          if (!filteredGradeName) return true
+                          return (team.gradeName || "").toLowerCase().includes(filteredGradeName)
+                        })
+
+                        if (relevantTeams.length === 0) {
+                          return (
+                            <div style={{ marginTop: '10px', paddingTop: '8px', borderTop: '1px solid #f1f5f9' }}>
+                              <div style={{ fontSize: '11px', color: '#94a3b8' }}>No teams in filter</div>
+                            </div>
+                          )
+                        }
+
+                        // 2. Get tasks assigned for this week matching grade filter
+                        const weekTasks = tasks.filter(t => {
+                          if (Number(t.weekId) !== Number(week.id)) return false
+                          if (filteredGradeName) {
+                            return (t.gradeName || "").toLowerCase().includes(filteredGradeName)
+                          }
+                          return true
+                        })
+
+                        // 3. Calculate how many teams completed all tasks for this week
+                        let completedTeamsCount = 0
+                        relevantTeams.forEach(team => {
+                          const teamId = Number(team.id)
+
+                          if (weekTasks.length === 0) {
+                            // If no specific tasks created for this week, check if team has any completed submission for this week
+                            const hasAnyCompleted = submissions.some(s => 
+                              s.teamId === teamId && 
+                              (s.statusId === STATUS_CONSTANTS.TASK_COMPLETED || s.statusId === STATUS_CONSTANTS.TASK_COMPLETED_LATE)
+                            )
+                            if (hasAnyCompleted) completedTeamsCount++
+                            return
+                          }
+
+                          const weekTaskIds = new Set(weekTasks.map(t => Number(t.id)))
+                          const completedTasksForTeam = submissions.filter(s => {
+                            if (s.teamId !== teamId || !weekTaskIds.has(s.taskId)) return false
+                            const sId = Number(s.statusId)
+                            return sId === STATUS_CONSTANTS.TASK_COMPLETED || sId === STATUS_CONSTANTS.TASK_COMPLETED_LATE
+                          }).length
+
+                          if (completedTasksForTeam >= weekTasks.length) {
+                            completedTeamsCount++
+                          }
+                        })
+
+                        const percentage = Math.round((completedTeamsCount / relevantTeams.length) * 100)
+                        const barColor = percentage === 100 ? '#10b981' : percentage > 0 ? '#ef4444' : '#cbd5e1'
+
+                        return (
+                          <div style={{ marginTop: '10px', paddingTop: '8px', borderTop: '1px solid #f1f5f9' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px', fontSize: '11px', fontWeight: '600' }}>
+                              <span style={{ color: '#475569' }}>Completion:</span>
+                              <span style={{ color: barColor, fontWeight: '700' }}>
+                                {percentage}% ({completedTeamsCount}/{relevantTeams.length} Teams)
+                              </span>
+                            </div>
+                            <div style={{ width: '100%', height: '8px', backgroundColor: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
+                              <div style={{
+                                width: `${percentage}%`,
+                                height: '100%',
+                                backgroundColor: barColor,
+                                borderRadius: '4px',
+                                transition: 'width 0.5s ease-in-out'
+                              }} />
+                            </div>
+                          </div>
+                        )
+                      })()}
                     </div>
 
                     <div className="admin-tasks-week-tasks">
