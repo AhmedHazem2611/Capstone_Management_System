@@ -60,10 +60,10 @@ function EngineerChip({ engineer, inCard, assignedTo, onRemove, overlay, sourceI
           ? 'opacity-20 scale-90'
           : (inCard || assignedTo)
           ? 'bg-red-50 text-slate-800 border-red-200 hover:bg-red-100'
-          : 'bg-white text-slate-700 border-slate-200 hover:border-red-400 hover:bg-red-50/30'
+          : 'bg-amber-50 text-slate-800 border-amber-200 hover:bg-amber-100 hover:border-amber-300'
       }`}
     >
-      <Users size={12} className={(inCard || assignedTo) ? "text-slate-400 opacity-70" : "opacity-60 text-slate-500"} />
+      <Users size={12} className={(inCard || assignedTo) ? "text-slate-400 opacity-70" : "text-amber-600 opacity-80"} />
       <span className="text-slate-800 font-semibold">{engName}</span>
       {assignedTo && !inCard && (
         <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-red-100 text-red-700 border border-red-200">
@@ -487,7 +487,7 @@ const Step2AssignEngineers = ({ onNext, onPrev, currentStep, user }) => {
             {/* Unassigned Engineers */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-600">
+                <span className="text-xs font-bold uppercase tracking-wider text-amber-700">
                   Unassigned Engineers ({unassignedEngineers.length})
                 </span>
                 <span className="text-[11px] text-slate-400">Drag chip to assign</span>
