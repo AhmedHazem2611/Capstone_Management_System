@@ -47,7 +47,7 @@
     top: 0;
     left: 0;
     height: 100vh;
-    width: var(--sidebar-width, 220px);
+    width: 220px;
     background-color: white;
     border-right: 1px solid #e2e8f0;
     display: flex;
@@ -59,23 +59,6 @@
     overflow-y: auto;
     box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
   }
-
-.sidebar-resizer {
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 6px;
-    height: 100%;
-    cursor: col-resize;
-    z-index: 1010;
-    background-color: transparent;
-    transition: background-color 0.2s ease;
-}
-
-.sidebar-resizer:hover,
-.sidebar-resizer.is-dragging {
-    background-color: #3b82f6;
-}
 
   /* Smooth scrolling for sidebar content */
   .sidebar::-webkit-scrollbar {

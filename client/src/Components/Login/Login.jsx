@@ -386,41 +386,7 @@ const Login = ({ onLoginSuccess }) => {
               </button>
             </form>
 
-            {/* Demo Login Toggle */}
-            <div className="mt-8 relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500 font-medium tracking-wide">OR</span>
-              </div>
-            </div>
-            
-            <button
-              type="button"
-              onClick={() => setShowDemoMenu(!showDemoMenu)}
-              className="mt-6 w-full bg-white border-2 border-gray-200 hover:border-red-300 hover:bg-red-50/50 text-gray-700 font-bold py-3 px-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 shadow-sm"
-            >
-              🚀 Quick Demo Login
-            </button>
 
-            {/* Demo Menu */}
-            {showDemoMenu && (
-              <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-3 animate-in fade-in slide-in-from-top-4 duration-300">
-                {demoAccounts.map((acc, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => handleDemoLogin(acc.email, acc.password)}
-                    disabled={isLoading}
-                    className={`bg-gradient-to-r ${acc.color} shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 text-white rounded-xl p-3 flex flex-col items-center justify-center gap-2 opacity-95 hover:opacity-100 disabled:opacity-50 border border-white/20`}
-                  >
-                    <span className="text-2xl drop-shadow-md">{acc.icon}</span>
-                    <span className="text-[11px] sm:text-xs font-bold tracking-wide">{acc.role}</span>
-                  </button>
-                ))}
-              </div>
-            )}
 
             {/* Footer */}
             <div className="mt-8 pt-6 border-t border-gray-200/60 text-center">
